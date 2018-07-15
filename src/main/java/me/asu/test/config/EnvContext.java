@@ -17,9 +17,9 @@ import me.asu.test.util.PlaceholderUtils;
  * @version 1.0.0
  * @since 2017-11-30 11:27
  */
-public class EnvContext implements Map<String, String> {
+public class EnvContext implements Map<String, Object> {
 
-	Map<String, String> cache = new ConcurrentHashMap<>();
+	Map<String, Object> cache = new ConcurrentHashMap<>();
 
 	@Getter
 	ApplicationConfig appCfg;
@@ -131,22 +131,22 @@ public class EnvContext implements Map<String, String> {
 	}
 
 	@Override
-	public String get(Object key) {
+	public Object get(Object key) {
 		return cache.get(key);
 	}
 
 	@Override
-	public String put(String key, String value) {
+	public Object put(String key, Object value) {
 		return cache.put(key, value);
 	}
 
 	@Override
-	public String remove(Object key) {
+	public Object remove(Object key) {
 		return cache.remove(key);
 	}
 
 	@Override
-	public void putAll(Map<? extends String, ? extends String> m) {
+	public void putAll(Map<? extends String, ? extends Object> m) {
 		cache.putAll(m);
 	}
 
@@ -161,12 +161,12 @@ public class EnvContext implements Map<String, String> {
 	}
 
 	@Override
-	public Collection<String> values() {
+	public Collection<Object> values() {
 		return cache.values();
 	}
 
 	@Override
-	public Set<Entry<String, String>> entrySet() {
+	public Set<Entry<String, Object>> entrySet() {
 		return cache.entrySet();
 	}
 
@@ -175,7 +175,7 @@ public class EnvContext implements Map<String, String> {
 		return cache.equals(o);
 	}
 
-	public Map<String, String> getCache() {
+	public Map<String, Object> getCache() {
 		return cache;
 	}
 

@@ -5,10 +5,14 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import me.asu.test.alerter.Alerter;
 import me.asu.test.alerter.SimpleAlerter;
 import me.asu.test.config.ApplicationConfig;
@@ -22,6 +26,7 @@ import me.asu.test.util.ClassUtils;
 import me.asu.test.util.ExcelUtils;
 import me.asu.test.util.FileUtils;
 import me.asu.test.util.StringUtils;
+import me.asu.test.util.TableGenerator;
 import org.nutz.lang.Lang;
 import org.nutz.lang.Strings;
 
@@ -37,6 +42,14 @@ public class AutoTestMain {
 		Map<String, String> options = Collections.emptyMap();
 		try {
 			options = parseCommandLine(args);
+			TableGenerator tg = new TableGenerator();
+			List<String> th = Arrays.asList(" 参数 ", " 值 ");
+			List<List<String>> rows = new ArrayList<>();
+			for (Entry<String, String> e : options.entrySet()) {
+				rows.add(Arrays.asList(e.getKey(), e.getValue()));
+			}
+			String s = tg.generateTable(th, rows);
+			System.out.println(s);
 		} catch (IllegalArgumentException e) {
 			usage();
 			System.exit(1);
@@ -48,8 +61,8 @@ public class AutoTestMain {
 
 		processReportAndNotification(envContext, testSuite);
 
-		if ("true".equalsIgnoreCase(envContext.get("use-temp-work-directory"))) {
-			String workDir = envContext.get("work-directory");
+		if ("true".equalsIgnoreCase((String)envContext.get("use-temp-work-directory"))) {
+			String workDir = (String)envContext.get("work-directory");
 			Path p = Paths.get(workDir);
 			if (Files.isDirectory(p)) {
 				FileUtils.deleteFileOrFolder(p);
@@ -67,7 +80,7 @@ public class AutoTestMain {
 			// directory repository
 			String dir = options.get("-d");
 			// copy dir to work dir
-			String workDir = envContext.get("work-directory");
+			String workDir = (String)envContext.get("work-directory");
 			FileUtils.copyFolder(Paths.get(dir), Paths.get(workDir));
 			testSuite = processDir(envContext);
 		} else {
@@ -77,7 +90,7 @@ public class AutoTestMain {
 			if (!StringUtils.isEmpty(xls)) {
 				testSuite = processExcels(xls, envContext);
 			}  else if (!StringUtils.isEmpty(dir)) {
-				String workDir = envContext.get("work-directory");
+				String workDir = (String)envContext.get("work-directory");
 				FileUtils.copyFolder(Paths.get(dir), Paths.get(workDir));
 				testSuite = processDir(envContext);
 			} else {
@@ -130,24 +143,24 @@ public class AutoTestMain {
 		if (options.containsKey("--reporter")) {
 			String klass = options.get("--reporter");
 			Class.forName(klass);
-			envContext.put("--reporter", klass);
+			envContext.put("test.reporter.type", klass);
 		} else {
-			envContext.put("--reporter", envContext.getCfg("test.reporter.type", ConsoleReporter.class.getName()));
+			envContext.put("test.reporter.type", envContext.getCfg("test.reporter.type", ConsoleReporter.class.getName()));
 		}
 
 		if (options.containsKey("--alerter")) {
 			String klass = options.get("--alerter");
 			Class.forName(klass);
-			envContext.put("--alerter", klass);
+			envContext.put("test.alerter.type", klass);
 		} else {
-			envContext.put("--alerter", envContext.getCfg("test.alerter.type", SimpleAlerter.class.getName()));
+			envContext.put("test.alerter.type", envContext.getCfg("test.alerter.type", SimpleAlerter.class.getName()));
 		}
 	}
 
 	private static void processReportAndNotification(EnvContext envContext,
 			TestSuite testSuite) {
 		// 1. create reporter
-		String reporterName = envContext.get("test.reporter.type");
+		String reporterName = (String)envContext.get("test.reporter.type");
 		if (Strings.isBlank(reporterName)) {
 			reporterName = "me.asu.test.reporter.ConsoleReporter";
 		}
@@ -156,7 +169,7 @@ public class AutoTestMain {
 
 		// 2. notify
 		if (testSuite.hasError()) {
-			String alertName = envContext.get("test.alerter.type");
+			String alertName = (String)envContext.get("test.alerter.type");
 			if (Strings.isBlank(alertName)) {
 				alertName = "me.asu.test.alerter.SimpleAlerter";
 			}
@@ -171,7 +184,7 @@ public class AutoTestMain {
 			throw new IllegalStateException(file + "不是一个excels文件");
 		}
 		// generate to a directory.
-		String dir = envContext.get("work-directory");
+		String dir = (String)envContext.get("work-directory");
 		Multimap<String, LinkedHashMap<String, String>> sheets = ExcelUtils
 				.readExcel(file, true);
 		TestDirGenerator generator = new TestDirGenerator(dir, sheets);
@@ -182,7 +195,7 @@ public class AutoTestMain {
 	private static TestSuite processDir(EnvContext envContext) {
 
 		// 1. create a test suite
-		String caseDir = envContext.get("work-directory");
+		String caseDir = (String)envContext.get("work-directory");
 		Path path = Paths.get(caseDir);
 		if (!Files.isDirectory(path)) {
 			throw new IllegalStateException(caseDir + "不是一个目录");

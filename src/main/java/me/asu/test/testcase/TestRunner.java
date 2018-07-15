@@ -96,7 +96,7 @@ public class TestRunner implements Runnable {
 
 	private void loadAssertFunctions(JsUtils jsUtils, Bindings caseBindings) {
 		// check custom assert.js
-		String assertJs =  testSuite.getEnvContext().get("test.internal.lib.assert.js");
+		String assertJs =  (String)testSuite.getEnvContext().get("test.internal.lib.assert.js");
 		try {
 			if (Strings.isBlank(assertJs)) {
 				assertJs = "scripts/assert.js";
