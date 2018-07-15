@@ -1,0 +1,1 @@
+print("destory test suite.")

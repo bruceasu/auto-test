@@ -1,0 +1,51 @@
+<assembly xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+		xmlns="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.2"
+		xsi:schemaLocation="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.2 http://maven.apache.org/xsd/assembly-1.1.2.xsd">
+	<id>config</id>
+	<formats>
+		<format>zip</format>
+	</formats>
+	<baseDirectory>${project.artifactId}</baseDirectory>
+	<!--<files>-->
+		<!--<file>-->
+			<!--<source>assembly/bin/run.exe</source>-->
+			<!--<outputDirectory>/</outputDirectory>-->
+			<!--<fileMode>0644</fileMode>-->
+		<!--</file>-->
+	<!--</files>-->
+	<fileSets>
+		<!--<fileSet>-->
+		<!--<directory>${project.basedir}/lib</directory>-->
+		<!--<includes>-->
+		<!--<include>*.jar</include>-->
+		<!--<include>*.zip</include>-->
+		<!--</includes>-->
+		<!--<outputDirectory>lib/</outputDirectory>-->
+		<!--</fileSet>-->
+
+		<!-- 由于assembly 插件会忽略同名文件，因此环境文件先加入-->
+
+		<!-- base/public config -->
+		<fileSet>
+			<directory>${project.basedir}/src/main/resources/</directory>
+			<outputDirectory>conf/</outputDirectory>
+			<fileMode>0644</fileMode>
+			<includes>
+				<include>**/*.properties</include>
+			</includes>
+		</fileSet>
+
+		<!-- public cases files, may be no file. -->
+		<fileSet>
+			<directory>assembly/cases</directory>
+			<outputDirectory>cases/</outputDirectory>
+		</fileSet>
+
+		<!-- public tools -->
+		<fileSet>
+			<directory>assembly/scripts</directory>
+			<outputDirectory>scripts/</outputDirectory>
+		</fileSet>
+
+	</fileSets>
+</assembly>
