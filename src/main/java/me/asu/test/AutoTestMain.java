@@ -168,14 +168,12 @@ public class AutoTestMain {
 		String reportData = report.report(testSuite);
 
 		// 2. notify
-		if (testSuite.hasError()) {
-			String alertName = (String)envContext.get("test.alerter.type");
-			if (Strings.isBlank(alertName)) {
-				alertName = "me.asu.test.alerter.SimpleAlerter";
-			}
-			Alerter alerter = ClassUtils.newInstance(alertName);
-			alerter.alert(testSuite, report.contentType(), reportData, envContext);
+		String alertName = (String)envContext.get("test.alerter.type");
+		if (Strings.isBlank(alertName)) {
+			alertName = "me.asu.test.alerter.SimpleAlerter";
 		}
+		Alerter alerter = ClassUtils.newInstance(alertName);
+		alerter.alert(testSuite, report.contentType(), reportData, envContext);
 	}
 
 	private static TestSuite processExcels(String file, EnvContext envContext) throws Exception {

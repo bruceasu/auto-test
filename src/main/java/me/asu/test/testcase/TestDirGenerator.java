@@ -87,20 +87,26 @@ public class TestDirGenerator {
 	private void generateCase(Path path) throws IOException {
 		Collection<LinkedHashMap<String, String>> rows = repo.get("testcase");
 		// name	order	ignore	descrtiption	type	url	headers	Cookie	parameters	pre_action	post_action	asserts	custom_code
-
+		// todo: 使用模版技术来生成文件
 		if (!rows.isEmpty()) {
 
 			for (LinkedHashMap<String, String> row : rows) {
-				Path caseDir = Paths.get(path.toString(), row.get("name"));
+				String name = row.get("name");
+				Integer order = Integer.valueOf(row.get("order"));
+				if (StringUtils.isEmpty(name)) {
+					continue;
+				}
+				Path caseDir = Paths.get(path.toString(), String.format("%04d-%s",order, name));
 				if (!Files.isDirectory(caseDir)) {
 					Files.createDirectories(caseDir);
 				}
 				// 1. create config.js
 				Path filePath = Paths.get(caseDir.toString(), "config.js");
 				Map<String, Object> config = new HashMap<>();
-				config.put("name", row.get("name"));
+				config.put("name", name);
 				config.put("description", row.get("description"));
-				config.put("order", Integer.valueOf(row.get("order")));
+
+				config.put("order", order);
 				config.put("ignore", Boolean.valueOf(row.get("ignore").toLowerCase()));
 
 				String json = Json.toJson(config, JsonFormat.nice());
