@@ -103,11 +103,12 @@ public class TestDirGenerator {
 	private void generateCase(Path path) throws IOException {
 		Collection<LinkedHashMap<String, String>> rows = repo.get("testcase");
 		// name	order	ignore	descrtiption	type	url	headers	Cookie	parameters	pre_action	post_action	asserts	custom_code
-
+		// todo: 使用模版技术来生成文件
 		if (!rows.isEmpty()) {
 
 			for (LinkedHashMap<String, String> row : rows) {
 				String name = row.get("name");
+
 				String order = row.get("order");
 				Integer iOrder = Integer.valueOf(order);
 
@@ -116,6 +117,11 @@ public class TestDirGenerator {
 					continue;
 				}
 				Path caseDir = Paths.get(path.toString(), String.format("%04d-%s", iOrder, name));
+
+				if (StringUtils.isEmpty(name)) {
+					continue;
+				}
+
 				if (!Files.isDirectory(caseDir)) {
 					Files.createDirectories(caseDir);
 				}
@@ -200,21 +206,21 @@ public class TestDirGenerator {
 					builder.append("var contentType = \"").append(isJson ? StringUtils.MIME_JSON
 							: StringUtils.MIME_FORM_URLENCODED).append(";charset=UTF-8\";\n");
 
-					String pre_action = row.get("pre_action");
-					if (StringUtils.isEmpty(pre_action)) {
+					String preAction = row.get("pre_action");
+					if (StringUtils.isEmpty(preAction)) {
 						builder.append("function pre_acton() {}\n");
 					} else {
 						builder.append("function pre_acton() {\n\t");
-						includeCode(builder, pre_action);
+						includeCode(builder, preAction);
 						builder.append(";\n").append("}\n");
 					}
 
-					String post_action = row.get("post_action");
-					if (StringUtils.isEmpty(post_action)) {
+					String postAction = row.get("post_action");
+					if (StringUtils.isEmpty(postAction)) {
 						builder.append("function post_action() {}\n");
 					} else {
 						builder.append("function post_action() {\n\t");
-						includeCode(builder, post_action);
+						includeCode(builder, postAction);
 						builder.append(";\n").append("}\n");
 					}
 

@@ -228,7 +228,7 @@ public class AutoTestMain {
 			return Collections.emptyMap();
 		}
 
-		Map<String, String> options = new HashMap<>();
+		Map<String, String> options = new HashMap<>(8);
 		for (int i = 0; i < args.length; i++) {
 			String cursor = args[i];
 			switch (cursor) {

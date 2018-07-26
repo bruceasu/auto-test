@@ -25,7 +25,6 @@ public class SimpleAlerter implements Alerter {
 			if (testSuite.hasError()) {
 				System.out.println("注意，有测试用例执行失败，请检查。");
 			}
-
 			System.out.println(contentType);
 			System.out.println(reportData);
 
