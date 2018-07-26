@@ -6,7 +6,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -16,6 +15,7 @@ import me.asu.test.util.Bytes;
 import me.asu.test.util.StringUtils;
 import org.nutz.json.Json;
 import org.nutz.json.JsonFormat;
+import org.nutz.lang.Strings;
 import org.nutz.log.Log;
 import org.nutz.log.Logs;
 
@@ -31,6 +31,9 @@ public class TestDirGenerator {
 	Log LOGGER = Logs.get();
 	private final String dir;
 	private final Multimap<String, LinkedHashMap<String, String>> repo;
+	private final Map<String, String> snippets = new HashMap<>();
+	private final Map<String, String> libs = new HashMap<>();
+	private final Map<String, String> globalVariables = new HashMap<>();
 
 	public TestDirGenerator(String dir, Multimap<String, LinkedHashMap<String, String>> repo) {
 		this.dir = dir;
@@ -45,10 +48,6 @@ public class TestDirGenerator {
 
 		// 全局
 		generateGlobalContext(path);
-		generateInitJs(path);
-		generateDesctroyJs(path);
-		generateCase(path);
-
 		Path libPath = Paths.get(path.toString(), "lib");
 		if (!Files.isDirectory(libPath)) {
 			Files.createDirectories(libPath);
@@ -58,14 +57,28 @@ public class TestDirGenerator {
 			if ("init.js".equals(key) || "desctory.js".equals(key) || "testcase".equals(key)) {
 				continue;
 			}
-			if (key.startsWith("lib@")) {
+			if ("snippets".equalsIgnoreCase(key)) {
+				generateSnippets(repo.get(key));
+			} else if (key.startsWith("lib@")) {
 				// process lib
 				generateLib(libPath, key, repo.get(key));
 			} else {
 				// ignore
+				LOGGER.infof("忽略%s", key);
 			}
 		}
 
+		generateInitJs(path);
+		generateDesctroyJs(path);
+		generateCase(path);
+	}
+
+	private void generateSnippets(Collection<LinkedHashMap<String, String>> linkedHashMaps) {
+		for (LinkedHashMap<String, String> line : linkedHashMaps) {
+			String name = line.get("name");
+			String code = line.get("code");
+			snippets.put(name, code);
+		}
 	}
 
 	private void generateLib(Path libPath, String key,
@@ -78,9 +91,12 @@ public class TestDirGenerator {
 					builder.append(value).append("\n");
 				}
 			}
+			String content = builder.toString();
 			String[] split = key.split("@");
-			Path filePath = Paths.get(libPath.toString(), split[1]);
-			Files.write(filePath, Bytes.toBytes(builder.toString()));
+			String name = split[1];
+			libs.put(name, content);
+			Path filePath = Paths.get(libPath.toString(), name);
+			Files.write(filePath, Bytes.toBytes(content));
 		}
 	}
 
@@ -91,16 +107,24 @@ public class TestDirGenerator {
 		if (!rows.isEmpty()) {
 
 			for (LinkedHashMap<String, String> row : rows) {
-				Path caseDir = Paths.get(path.toString(), row.get("name"));
+				String name = row.get("name");
+				String order = row.get("order");
+				Integer iOrder = Integer.valueOf(order);
+
+				if (StringUtils.isEmpty(name)) {
+					// 空行
+					continue;
+				}
+				Path caseDir = Paths.get(path.toString(), String.format("%04d-%s", iOrder, name));
 				if (!Files.isDirectory(caseDir)) {
 					Files.createDirectories(caseDir);
 				}
 				// 1. create config.js
 				Path filePath = Paths.get(caseDir.toString(), "config.js");
 				Map<String, Object> config = new HashMap<>();
-				config.put("name", row.get("name"));
+				config.put("name", name);
 				config.put("description", row.get("description"));
-				config.put("order", Integer.valueOf(row.get("order")));
+				config.put("order", iOrder);
 				config.put("ignore", Boolean.valueOf(row.get("ignore").toLowerCase()));
 
 				String json = Json.toJson(config, JsonFormat.nice());
@@ -112,8 +136,14 @@ public class TestDirGenerator {
 				if ("custom".equalsIgnoreCase(type)) {
 					String source = row.get("custom_code");
 					if (StringUtils.isEmpty(source)) {
-						LOGGER.warn("没有custom_code");
+						String content = "var msg = '没有custom_code';\nprint(msg);\n throw msg;\n";
+						Files.write(mainFile, Bytes.toBytes(content));
 					} else {
+						String[] split = source.split("\\n");
+						StringBuilder builder = new StringBuilder();
+						for (String s : split) {
+							includeCode(builder, s);
+						}
 						Files.write(mainFile, Bytes.toBytes(source));
 					}
 				} else {
@@ -174,22 +204,27 @@ public class TestDirGenerator {
 					if (StringUtils.isEmpty(pre_action)) {
 						builder.append("function pre_acton() {}\n");
 					} else {
-						builder.append("function pre_acton() {\n\t")
-							.append(pre_action).append(";\n").append("}\n");
+						builder.append("function pre_acton() {\n\t");
+						includeCode(builder, pre_action);
+						builder.append(";\n").append("}\n");
 					}
 
 					String post_action = row.get("post_action");
 					if (StringUtils.isEmpty(post_action)) {
 						builder.append("function post_action() {}\n");
 					} else {
-						builder.append("function post_action() {\n\t").append(post_action).append(";\n").append("}\n");
+						builder.append("function post_action() {\n\t");
+						includeCode(builder, post_action);
+						builder.append(";\n").append("}\n");
 					}
 
 					String asserts = row.get("asserts");
 					if (StringUtils.isEmpty(asserts)) {
 						builder.append("function asserts() {current_test_case.setResult(true);}\n");
 					} else {
-						builder.append("function asserts() {\n\t").append(asserts).append(";\n").append("\tcurrent_test_case.setResult(true);\n}\n");
+						builder.append("function asserts() {\n\t");
+						includeCode(builder, asserts);
+						builder.append(";\n").append("\tcurrent_test_case.setResult(true);\n}\n");
 					}
 
 
@@ -209,14 +244,40 @@ public class TestDirGenerator {
 		}
 	}
 
+	private void includeCode(StringBuilder builder, String s) {
+		String t = s.trim();
+		if (t.startsWith("//@lib:")) {
+			String libName = t.substring("//@lib:".length());
+			String libContent = libs.get(libName);
+			if (Strings.isNotBlank(libContent)) {
+				builder.append(libContent).append('\n');
+			}
+		} else if (t.startsWith("//@snippet:")) {
+			String snippetName = t.substring("//@snippet:".length());
+			String snippetContent = snippets.get(snippetName);
+			if (Strings.isNotBlank(snippetContent)) {
+				builder.append(snippetContent).append('\n');
+			}
+		} else if (t.startsWith("//@globalVariables:")) {
+			String varName = t.substring("//@snippet:".length());
+			String varContent = globalVariables.get(varName);
+			if (Strings.isNotBlank(varContent)) {
+				builder.append(varContent).append('\n');
+			}
+		} else {
+			builder.append(s).append("\n");
+		}
+	}
+
 	private void generateGlobalContext(Path path) throws IOException {
 		Collection<LinkedHashMap<String, String>> rows = repo.get("global_context.js");
 		if (!rows.isEmpty()) {
 			StringBuilder builder = new StringBuilder("var global_context = {};\n");
 			for (LinkedHashMap<String, String> row : rows) {
-				String key = row.get("key");
-				String value = row.get("value");
-				builder.append("global_context[\"").append(key.trim()).append("\"] = \"").append(value).append("\";\n");
+				String key = row.get("key").trim();
+				String value = row.get("value").replace("\n", "\\n").replace("\"", "\\\"");
+				builder.append("global_context[\"").append(key).append("\"] = \"").append(value).append("\";\n");
+				globalVariables.put(key, value);
 			}
 			Files.write(Paths.get(path.toString(), "global_context.js"),
 					Bytes.toBytes(builder.toString()));

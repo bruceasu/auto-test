@@ -232,11 +232,11 @@ status() {
 
 case "$ACTION" in
     start)
-        start
+        start $@
         ;;
     stop)
         if is_running; then
-            stop
+            stop $@
             exit 0
         else
             echoRed "${APP_NAME} not running"
@@ -244,8 +244,8 @@ case "$ACTION" in
         fi
         ;;
     restart)
-        stop
-        start
+        stop $@
+        start $@
         ;;
     status)
         status

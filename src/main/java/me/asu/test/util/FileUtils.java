@@ -13,7 +13,7 @@ import java.nio.file.attribute.BasicFileAttributes;
  */
 public abstract class FileUtils {
 
-	public static void copyFolder(Path srcPath, Path destPath)
+	public static void copyFolder(final Path srcPath, final Path destPath)
 			throws IOException {
 		long startTime = System.currentTimeMillis();
 		if (Files.notExists(srcPath)) {

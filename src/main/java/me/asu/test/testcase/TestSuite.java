@@ -50,7 +50,8 @@ public class TestSuite {
 			try {
 				testSuite.addTestCase(createTestCase(caseDir));
 			} catch (Exception e) {
-				LOGGER.warn("忽略此测试用例，" + caseDir, e);
+				LOGGER.warn("出现异常，忽略此目录。" + caseDir, e);
+
 			}
 		}
 		return testSuite;

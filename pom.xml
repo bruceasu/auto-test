@@ -229,7 +229,7 @@
 							<addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
 							<addClasspath>true</addClasspath>
 							<mainClass>${main.class}</mainClass>
-							<!--<classpathPrefix>lib/</classpathPrefix>-->
+							<classpathPrefix>lib/</classpathPrefix>
 							<!--classpathMavenRepositoryLayout>true</classpathMavenRepositoryLayout-->
 						</manifest>
 						<!-- 添加classpath缺少的内容-->
@@ -237,123 +237,48 @@
 							<Class-Path>conf/ ./</Class-Path>
 						</manifestEntries>
 					</archive>
-					<excludes>
-						<exclude>**/*.yml</exclude>
-						<exclude>**/*.xml</exclude>
-						<exclude>**/log4j.properties</exclude>
-					</excludes>
+					<!--<excludes>-->
+						<!--<exclude>**/*.yml</exclude>-->
+						<!--<exclude>**/*.xml</exclude>-->
+						<!--<exclude>**/log4j.properties</exclude>-->
+					<!--</excludes>-->
 				</configuration>
 			</plugin>
-			<!--<plugin>-->
-			<!--<groupId>com.jolira</groupId>-->
-			<!--<artifactId>onejar-maven-plugin</artifactId>-->
-			<!--<version>1.4.4</version>-->
-			<!--<executions>-->
-			<!--<execution>-->
-			<!--<id>make-onejar</id>-->
-			<!--<phase>package</phase>-->
-			<!--<configuration>-->
-			<!--<attachToBuild>true</attachToBuild>-->
-			<!--<classifier>onejar</classifier>-->
-			<!--</configuration>-->
-			<!--<goals>-->
-			<!--<goal>one-jar</goal>-->
-			<!--</goals>-->
-			<!--</execution>-->
-			<!--</executions>-->
-			<!--</plugin>-->
 			<plugin>
-				<artifactId>maven-assembly-plugin</artifactId>
-				<version>2.5.3</version>
-				<!--<configuration>-->
-				<!--<descriptor>assembly/dist.xml</descriptor>-->
-				<!--</configuration>-->
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-dependency-plugin</artifactId>
 				<executions>
 					<execution>
-						<id>make-program</id>
+						<id>copy-dependencies</id>
 						<phase>package</phase>
 						<goals>
-							<goal>single</goal>
+							<goal>copy-dependencies</goal>
 						</goals>
 						<configuration>
-							<!--<finalName>unify-account-auto-test-bin</finalName>-->
-							<!-- 描述符文件 -->
-							<finalName>${project.artifactId}-bin-${maven.build.timestamp}</finalName>
-							<appendAssemblyId>false</appendAssemblyId>
-							<attach>false</attach>
-							<descriptors>
-								<descriptor>assembly/program.xml</descriptor>
-							</descriptors>
-						</configuration>
-					</execution>
-					<execution>
-						<id>make-config</id>
-						<phase>package</phase>
-						<goals>
-							<goal>single</goal>
-						</goals>
-						<configuration>
-							<!--<finalName>unify-account-auto-test-config</finalName>-->
-							<finalName>${project.artifactId}-config-${maven.build.timestamp}</finalName>
-							<appendAssemblyId>false</appendAssemblyId>
-							<attach>false</attach>
-							<descriptors>
-								<descriptor>assembly/config.xml</descriptor>
-							</descriptors>
+							<outputDirectory>${project.build.directory}/lib/</outputDirectory>
 						</configuration>
 					</execution>
 				</executions>
 			</plugin>
+			<!--<plugin>-->
+				<!--<groupId>com.jolira</groupId>-->
+				<!--<artifactId>onejar-maven-plugin</artifactId>-->
+				<!--<version>1.4.4</version>-->
+				<!--<executions>-->
+					<!--<execution>-->
+						<!--<id>make-onejar</id>-->
+						<!--<phase>package</phase>-->
+						<!--<configuration>-->
+							<!--<attachToBuild>true</attachToBuild>-->
+							<!--<classifier>onejar</classifier>-->
+						<!--</configuration>-->
+						<!--<goals>-->
+							<!--<goal>one-jar</goal>-->
+						<!--</goals>-->
+					<!--</execution>-->
+				<!--</executions>-->
+			<!--</plugin>-->
+
 		</plugins>
 	</build>
-	<distributionManagement>
-		<repository>
-			<id>nexus</id>
-			<name>User Project Release</name>
-			<url>http://192.168.35.210:8081/repository/maven-releases/</url>
-		</repository>
-		<snapshotRepository>
-			<id>nexus</id>
-			<name>User Project SNAPSHOTS</name>
-			<url>http://192.168.35.210:8081/repository/maven-snapshots/</url>
-		</snapshotRepository>
-	</distributionManagement>
-	<repositories>
-		<!--<repository>-->
-		<!--<id>nexus-releases</id>-->
-		<!--<name>releases</name>-->
-		<!--<url>http://192.168.35.210:8081/repository/maven-releases/</url>-->
-		<!--</repository>-->
-		<!--<repository>-->
-		<!--<id>nexus-snapshots</id>-->
-		<!--<name>snapshot</name>-->
-		<!--<url>http://192.168.35.210:8081/repository/maven-snapshots/</url>-->
-		<!--<snapshots>-->
-		<!--<enabled>true</enabled>-->
-		<!--</snapshots>-->
-		<!--</repository>-->
-		<repository>
-			<id>nexus</id>
-			<url>http://192.168.35.210:8081/repository/maven-public/</url>
-			<releases>
-				<enabled>true</enabled>
-			</releases>
-			<snapshots>
-				<enabled>true</enabled>
-			</snapshots>
-		</repository>
-	</repositories>
-	<pluginRepositories>
-		<pluginRepository>
-			<id>nexus</id>
-			<name>nexus</name>
-			<url>http://192.168.35.210:8081/repository/maven-public/</url>
-			<releases>
-				<enabled>true</enabled>
-			</releases>
-			<snapshots>
-				<enabled>true</enabled>
-			</snapshots>
-		</pluginRepository>
-	</pluginRepositories>
 </project>

@@ -71,7 +71,7 @@ set CMD_LINE_ARGS=%*
 
 
 @rem Execute Gradle
-"%JAVA_EXE%" %JAVA_OPTS% -cp %CLASSPATH% %MAIN_CLASS% %APP_ARGS% %CMD_LINE_ARGS%
+"%JAVA_EXE%" %JAVA_OPTS% -cp %CLASSPATH% %MAIN_CLASS% %APP_ARGS% %CMD_LINE_ARGS% %1 %2 %3 %4 %5 %6 %7 %8 %9
 
 :end
 @rem End local scope for the variables with windows NT shell

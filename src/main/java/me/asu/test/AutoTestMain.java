@@ -32,13 +32,15 @@ import org.nutz.lang.Strings;
 
 /**
  * Run the auto test case script.
+ *
  * @version 1.0.0
  * @since 2017-11-28 17:06
  */
 public class AutoTestMain {
+
 	public static void main(String[] args) throws Exception {
 
-		EnvContext envContext = new EnvContext();
+		final EnvContext envContext = new EnvContext();
 		Map<String, String> options = Collections.emptyMap();
 		try {
 			options = parseCommandLine(args);
@@ -61,13 +63,23 @@ public class AutoTestMain {
 
 		processReportAndNotification(envContext, testSuite);
 
-		if ("true".equalsIgnoreCase((String)envContext.get("use-temp-work-directory"))) {
-			String workDir = (String)envContext.get("work-directory");
-			Path p = Paths.get(workDir);
-			if (Files.isDirectory(p)) {
-				FileUtils.deleteFileOrFolder(p);
+		Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
+			@Override
+			public void run() {
+				if ("true".equalsIgnoreCase((String) envContext.get("use-temp-work-directory"))) {
+					String workDir = (String) envContext.get("work-directory");
+					Path p = Paths.get(workDir);
+					if (Files.isDirectory(p)) {
+						try {
+							FileUtils.deleteFileOrFolder(p);
+						} catch (IOException e) {
+							e.printStackTrace();
+						}
+					}
+				}
 			}
-		}
+		}, "cleanup"));
+
 	}
 
 	private static TestSuite processTestSuite(EnvContext envContext, Map<String, String> options)
@@ -80,7 +92,7 @@ public class AutoTestMain {
 			// directory repository
 			String dir = options.get("-d");
 			// copy dir to work dir
-			String workDir = (String)envContext.get("work-directory");
+			String workDir = (String) envContext.get("work-directory");
 			FileUtils.copyFolder(Paths.get(dir), Paths.get(workDir));
 			testSuite = processDir(envContext);
 		} else {
@@ -89,8 +101,8 @@ public class AutoTestMain {
 			String dir = envContext.getCfg("test.case.repository.dir");
 			if (!StringUtils.isEmpty(xls)) {
 				testSuite = processExcels(xls, envContext);
-			}  else if (!StringUtils.isEmpty(dir)) {
-				String workDir = (String)envContext.get("work-directory");
+			} else if (!StringUtils.isEmpty(dir)) {
+				String workDir = (String) envContext.get("work-directory");
 				FileUtils.copyFolder(Paths.get(dir), Paths.get(workDir));
 				testSuite = processDir(envContext);
 			} else {
@@ -110,7 +122,7 @@ public class AutoTestMain {
 		ApplicationConfig appCfg;
 		if (options.containsKey("-c")) {
 			// load from custom file
-			appCfg = new ApplicationConfig("application-default.properties", options.get("-c"));
+			appCfg = new ApplicationConfig(options.get("-c"));
 		} else {
 			// just load default
 			appCfg = new ApplicationConfig("application-default.properties");
@@ -133,7 +145,7 @@ public class AutoTestMain {
 			String[] jars = options.get("--java-lib").split(",");
 			for (String jar : jars) {
 				if (Files.exists(Paths.get(jar))) {
-					ClassUtils.addToClasspath(jar);
+					ClassUtils.addJarToClasspath(jar);
 				} else {
 					throw Lang.makeThrow("%s 不存在。", jar);
 				}
@@ -145,7 +157,8 @@ public class AutoTestMain {
 			Class.forName(klass);
 			envContext.put("test.reporter.type", klass);
 		} else {
-			envContext.put("test.reporter.type", envContext.getCfg("test.reporter.type", ConsoleReporter.class.getName()));
+			envContext.put("test.reporter.type",
+					envContext.getCfg("test.reporter.type", ConsoleReporter.class.getName()));
 		}
 
 		if (options.containsKey("--alerter")) {
@@ -153,29 +166,28 @@ public class AutoTestMain {
 			Class.forName(klass);
 			envContext.put("test.alerter.type", klass);
 		} else {
-			envContext.put("test.alerter.type", envContext.getCfg("test.alerter.type", SimpleAlerter.class.getName()));
+			envContext.put("test.alerter.type",
+					envContext.getCfg("test.alerter.type", SimpleAlerter.class.getName()));
 		}
 	}
 
 	private static void processReportAndNotification(EnvContext envContext,
 			TestSuite testSuite) {
 		// 1. create reporter
-		String reporterName = (String)envContext.get("test.reporter.type");
+		String reporterName = (String) envContext.get("test.reporter.type");
 		if (Strings.isBlank(reporterName)) {
 			reporterName = "me.asu.test.reporter.ConsoleReporter";
 		}
 		TestReporter report = ClassUtils.newInstance(reporterName);
 		String reportData = report.report(testSuite);
-
+//		System.out.println(reportData);
 		// 2. notify
-		if (testSuite.hasError()) {
-			String alertName = (String)envContext.get("test.alerter.type");
-			if (Strings.isBlank(alertName)) {
-				alertName = "me.asu.test.alerter.SimpleAlerter";
-			}
-			Alerter alerter = ClassUtils.newInstance(alertName);
-			alerter.alert(testSuite, report.contentType(), reportData, envContext);
+		String alertName = (String) envContext.get("test.alerter.type");
+		if (Strings.isBlank(alertName)) {
+			alertName = "me.asu.test.alerter.SimpleAlerter";
 		}
+		Alerter alerter = ClassUtils.newInstance(alertName);
+		alerter.alert(testSuite, report.contentType(), reportData, envContext);
 	}
 
 	private static TestSuite processExcels(String file, EnvContext envContext) throws Exception {
@@ -184,7 +196,7 @@ public class AutoTestMain {
 			throw new IllegalStateException(file + "不是一个excels文件");
 		}
 		// generate to a directory.
-		String dir = (String)envContext.get("work-directory");
+		String dir = (String) envContext.get("work-directory");
 		Multimap<String, LinkedHashMap<String, String>> sheets = ExcelUtils
 				.readExcel(file, true);
 		TestDirGenerator generator = new TestDirGenerator(dir, sheets);
@@ -195,7 +207,7 @@ public class AutoTestMain {
 	private static TestSuite processDir(EnvContext envContext) {
 
 		// 1. create a test suite
-		String caseDir = (String)envContext.get("work-directory");
+		String caseDir = (String) envContext.get("work-directory");
 		Path path = Paths.get(caseDir);
 		if (!Files.isDirectory(path)) {
 			throw new IllegalStateException(caseDir + "不是一个目录");
@@ -210,7 +222,8 @@ public class AutoTestMain {
 		return testSuite;
 	}
 
-	private static Map<String, String> parseCommandLine(String[] args) throws IllegalArgumentException {
+	private static Map<String, String> parseCommandLine(String[] args)
+			throws IllegalArgumentException {
 		if (args.length == 0) {
 			return Collections.emptyMap();
 		}
@@ -218,7 +231,7 @@ public class AutoTestMain {
 		Map<String, String> options = new HashMap<>();
 		for (int i = 0; i < args.length; i++) {
 			String cursor = args[i];
-			switch(cursor) {
+			switch (cursor) {
 				case "-h":
 				case "--help":
 					options.put("-h", "");
@@ -267,7 +280,7 @@ public class AutoTestMain {
 					if (i < args.length) {
 						options.put("--reporter", args[i]);
 						break;
-					}  else {
+					} else {
 						throw new IllegalArgumentException("--reporter 必须有一个参数。");
 					}
 				case "--alerter":
@@ -275,7 +288,7 @@ public class AutoTestMain {
 					if (i < args.length) {
 						options.put("--alerter", args[i]);
 						break;
-					}  else {
+					} else {
 						throw new IllegalArgumentException("--alerter 必须有一个参数。");
 					}
 				case "--java-lib":

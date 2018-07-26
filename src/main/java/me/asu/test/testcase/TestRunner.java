@@ -9,7 +9,6 @@ import javax.script.Bindings;
 import javax.script.ScriptException;
 import me.asu.test.util.JsUtils;
 import org.nutz.lang.Files;
-import org.nutz.lang.Lang;
 import org.nutz.lang.Strings;
 import org.nutz.log.Log;
 import org.nutz.log.Logs;
@@ -62,18 +61,19 @@ public class TestRunner implements Runnable {
 				testCase.setStartTime(System.currentTimeMillis());
 				testCase.setEndTime(System.currentTimeMillis());
 				testCase.setResult(false);
-				String message = "忽略此测试用例。";
+				String message = "忽略此测试用例: " + testCase.getName();
 				testCase.setMessage(message);
 				LOGGER.info(message);
 			} else {
-				LOGGER.infof("%s %s %s", Strings.dup("=", 30), testCase.getName(), Strings.dup("=", 30));
+				LOGGER.infof("%s %s %s", Strings.dup("=", 30), testCase.getName(),
+						Strings.dup("=", 30));
 				LOGGER.infof("开始执行测试用例： %s", testCase.getDescription());
 				JsUtils jsUtils = new JsUtils();
 				Bindings caseBindings = jsUtils.createBindings();
 				caseBindings.put("env_context", testSuite.getEnvContext());
 				caseBindings.put("current_test_case", testCase);
 				try {
-					loadAssertFunctions(jsUtils, caseBindings);
+					loadInnerFunctions(jsUtils, caseBindings);
 					loadPublicFunctions(jsUtils, caseBindings);
 					testCase.setRan(true);
 					testCase.setStartTime(System.currentTimeMillis());
@@ -94,30 +94,20 @@ public class TestRunner implements Runnable {
 		cleanup();
 	}
 
-	private void loadAssertFunctions(JsUtils jsUtils, Bindings caseBindings) {
-		// check custom assert.js
-		String assertJs =  (String)testSuite.getEnvContext().get("test.internal.lib.assert.js");
-		try {
-			if (Strings.isBlank(assertJs)) {
-				assertJs = "scripts/assert.js";
-				jsUtils.eval(Files.read(assertJs), caseBindings);
-			} else {
-				File assertJsFile = new File(assertJs);
-				if (!Files.isFile(assertJsFile)) {
-					// from default classpath
-					assertJs = "scripts/assert.js";
-					jsUtils.eval(Files.read(assertJs), caseBindings);
-				} else {
-					jsUtils.eval(Files.read(assertJs), caseBindings);
-				}
+	private void loadInnerFunctions(JsUtils jsUtils, Bindings caseBindings) {
+		String assertJs = "scripts/assert.js";
+		String utilsJs = "scripts/assert.js";
+		String dbNutzJs = "scripts/db-nutz.js";
+		String fileUtilsJs = "scripts/file-utils.js";
+		String httpUtilsJs = "scripts/http-utils.js";
+		String[] libs = new String[] {assertJs, utilsJs};
+		for (String lib : libs) {
+			try {
+				jsUtils.eval(Files.read(lib), caseBindings);
+			} catch (Throwable e) {
+				LOGGER.errorf("忽略内部函数库 [%s]", lib, e);
 			}
-
-		} catch (ScriptException e) {
-			LOGGER.errorf("忽略内部函数库 [%s]", assertJs, e);
-		} catch (RuntimeException e) {
-			LOGGER.errorf("忽略内部函数库 [%s]", assertJs, e);
 		}
-
 	}
 
 	private void loadPublicFunctions(JsUtils jsUtils, Bindings caseBindings) {

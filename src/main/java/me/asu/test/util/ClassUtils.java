@@ -183,6 +183,9 @@ public class ClassUtils {
     public static void addToClasspath(String path) {
         extClasspathLoader.addURL(path);
     }
+    public static void addJarToClasspath(String path) {
+        extClasspathLoader.loadJarToClasspath(path);
+    }
 
     public static void addToClasspath(URL path) {
         extClasspathLoader.addURL(path);

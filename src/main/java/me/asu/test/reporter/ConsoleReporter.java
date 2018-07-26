@@ -55,7 +55,7 @@ public class ConsoleReporter implements TestReporter {
 			row.add(TableGenerator.makeAlignCenter(String.valueOf(testCase.isResult())));
 			row.add(safeTrim(testCase.getMessage()));
 			row.add(testCase.getCause() == null ? "" : testCase.getCause().toString());
-			row.add(safeTrim(testCase.getDescription()));
+			row.add(safeTrim(testCase.getDescription()).replaceAll("[\r\n]", ""));
 			rows.add(row);
 		}
 		String s = tg.generateTable(headers, rows);

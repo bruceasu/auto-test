@@ -6,6 +6,7 @@ import java.util.List;
 import me.asu.test.testcase.TestCase;
 import me.asu.test.testcase.TestSuite;
 import me.asu.test.util.TableGenerator;
+import org.nutz.lang.Strings;
 
 /**
  * HtmReporter.
@@ -89,19 +90,27 @@ public class HtmReporter implements TestReporter {
 		for(List<String> row : rows) {
 			b.append("\t<tr>");
 			for (String cell : row) {
-				b.append("\t\t<td>").append(cell).append("</td>");
+				b.append("\t\t<td>").append(escapeHtml(cell)).append("</td>");
 			}
 			b.append("</tr>\n");
 		}
 
 		return b.toString();
 	}
+	private String escapeHtml(String content) {
+		if (Strings.isBlank(content)) {
+			return "";
+		}
+		return content.replace("&", "&amp;")
+				.replace("<", "&lt;")
+				.replace(">", "&gt;");
 
+	}
 	private String generateHeaderTr(List<String> headers) {
 		StringBuilder b = new StringBuilder();
 		b.append("\t<tr>");
 		for (String header : headers) {
-			b.append("\t\t<th>").append(header).append("</th>");
+			b.append("\t\t<th>").append(escapeHtml(header)).append("</th>");
 		}
 		b.append("</tr>\n");
 		return b.toString();

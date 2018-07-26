@@ -21,7 +21,6 @@ public final class ExtClasspathLoader {
 
 	public void addURL(File file) {
 		try {
-			file = (file.isDirectory()) ? file : file.getParentFile();
 			addURL(file.toURI().toURL());
 		} catch (Exception localException) {
 		}
