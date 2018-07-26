@@ -91,7 +91,7 @@ public class MailUtil {
 
 		//发送匿名邮件
 		MailMessage anonymousMail = new MailMessage("subject",
-				"victor.su@gwtsz.net", "victor.su@gwtsz.net", "content");
+				"abcd@efg.net", "abcd@efg.net", "content");
 		//anonymousMail.setFileNames(attachments);
 		sendAnonymousEmail(anonymousMail);
 	}

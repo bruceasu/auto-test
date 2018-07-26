@@ -8,7 +8,7 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 
 /**
- * @author victor.
+ * @author Suk.
  * @since 2018/7/5
  */
 public abstract class FileUtils {
