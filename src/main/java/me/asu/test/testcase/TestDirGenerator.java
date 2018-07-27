@@ -208,9 +208,9 @@ public class TestDirGenerator {
 
 					String preAction = row.get("pre_action");
 					if (StringUtils.isEmpty(preAction)) {
-						builder.append("function pre_acton() {}\n");
+						builder.append("function pre_action() {}\n");
 					} else {
-						builder.append("function pre_acton() {\n\t");
+						builder.append("function pre_action() {\n\t");
 						includeCode(builder, preAction);
 						builder.append(";\n").append("}\n");
 					}
@@ -235,7 +235,7 @@ public class TestDirGenerator {
 
 
 					builder.append("function main(){\n")
-							.append("\tpre_acton();\n")
+							.append("\tpre_action();\n")
 							.append("\tparameters = PlaceholderUtils.resolvePlaceholders(parameters, env_context);\n")
 							.append("\tprocess();\n")
 							.append("\tpost_action();\n")
@@ -268,7 +268,7 @@ public class TestDirGenerator {
 			String varName = t.substring("//@snippet:".length());
 			String varContent = globalVariables.get(varName);
 			if (Strings.isNotBlank(varContent)) {
-				builder.append(varContent).append('\n');
+				builder.append('"').append(varContent).append('"').append('\n');
 			}
 		} else {
 			builder.append(s).append("\n");
