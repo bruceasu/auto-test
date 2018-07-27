@@ -1,7 +1,7 @@
 package me.asu.test.testcase;
 
 /**
- * @author victor.
+ * @author suk.
  * @since 2018/7/17
  */
 public class TestFormat {
