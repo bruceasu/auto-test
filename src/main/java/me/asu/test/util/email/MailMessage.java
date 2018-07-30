@@ -48,7 +48,7 @@ public class MailMessage {
 		this.tos = new String[]{to};
 		this.content = content;
 	}
-	public static MailMessageBuilder bulider() {
+	public static MailMessageBuilder builder() {
 		return new MailMessageBuilder();
 	}
 

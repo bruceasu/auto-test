@@ -39,7 +39,7 @@ import org.nutz.lang.Strings;
 public class AutoTestMain {
 
 	public static void main(String[] args) throws Exception {
-
+		System.setProperty("app.command-line", Strings.join(" ", args));
 		final EnvContext envContext = new EnvContext();
 		Map<String, String> options = Collections.emptyMap();
 		try {
@@ -59,7 +59,7 @@ public class AutoTestMain {
 
 		processOptions(envContext, options);
 
-		TestSuite testSuite = processTestSuite(envContext, options);
+		final TestSuite testSuite = processTestSuite(envContext, options);
 
 		processReportAndNotification(envContext, testSuite);
 
@@ -197,6 +197,7 @@ public class AutoTestMain {
 		}
 		// generate to a directory.
 		String dir = (String) envContext.get("work-directory");
+		System.setProperty("app.excels-file", file);
 		Multimap<String, LinkedHashMap<String, String>> sheets = ExcelUtils
 				.readExcel(file, true);
 		TestDirGenerator generator = new TestDirGenerator(dir, sheets);
@@ -208,6 +209,7 @@ public class AutoTestMain {
 
 		// 1. create a test suite
 		String caseDir = (String) envContext.get("work-directory");
+		System.setProperty("app.work-directory", caseDir);
 		Path path = Paths.get(caseDir);
 		if (!Files.isDirectory(path)) {
 			throw new IllegalStateException(caseDir + "不是一个目录");
