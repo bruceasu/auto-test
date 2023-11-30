@@ -41,11 +41,12 @@ public class EnvContext implements Map<String, Object> {
 		if (cfg == null) {
 			return;
 		}
-		Set<String> strings = cfg.keySet();
+		List<String> strings = cfg.getKeys();
 		for (String key : strings) {
 			String s = cfg.get(key);
 			s = PlaceholderUtils.resolvePlaceholders(s, cache);
 			cfg.set(key, s);
+			cache.put(key, s);
 		}
 		this.appCfg = cfg;
 	}

@@ -27,14 +27,15 @@ public class ConsoleReporter implements TestReporter {
 			return "";
 		}
 		StringBuilder builder = new StringBuilder();
-		builder.append(String.format("测试组：%s\n", suite.getTestDir()));
+		builder.append(String.format("Test Group：%s\n", suite.getTestDir()));
 
 		TableGenerator tg = new TableGenerator();
 		int suc = 0;
 		int err = 0;
 
-		List<String> headers = Arrays
-				.asList(" 用例 ", " 是否忽略 ", " 是否执行 ", " 结果 ", " 信息 ", " 异常 ", " 描述 ");
+		List<String> headers =
+				Arrays.asList(" Case ", " Ignore? ", " Execute? ", " Result ", " Information ",
+						" Exception ", " Description ");
 		List<List<String>> rows = new ArrayList<>();
 		List<TestCase> testCases = suite.getTestCases();
 		int ignore = 0;
@@ -64,9 +65,10 @@ public class ConsoleReporter implements TestReporter {
 		rows.add(Arrays.asList("" + suc, "" + err));
 		int size = suc + err;
 		size = size == 0 ? 1 : size;
-		rows.add(Arrays.asList(TableGenerator.makeAlignCenter("成功率"), (suc * 100 / size) + "%"));
+		rows.add(Arrays.asList(TableGenerator.makeAlignCenter("Success Percent"), (suc * 100 / size) + "%"));
 		s = tg.generateTable(Arrays.asList(
-				TableGenerator.makeAlignCenter("成功数"), TableGenerator.makeAlignCenter("失败数")),
+						TableGenerator.makeAlignCenter("Success"),
+						TableGenerator.makeAlignCenter("Failure")),
 				rows);
 		builder.append(s);
 		String report = builder.toString();

@@ -1,6 +1,7 @@
 package me.asu.test.util;
 
 import java.util.Objects;
+import java.util.Optional;
 import java.util.regex.Pattern;
 
 /**
@@ -21,8 +22,13 @@ public class StringUtils {
 	 * @return true or false
 	 */
 	public static boolean isEmpty(Object str) {
-		return (str == null || "".equals(str.toString().trim()));
+		return (str == null || str.toString().trim().isEmpty());
 	}
+
+	public static boolean isNotEmpty(Object str) {
+		return !isEmpty(str);
+	}
+
 	/**
 	 * 快速判断是否是formData
 	 * @param content 文本
@@ -119,5 +125,40 @@ public class StringUtils {
 		}
 		// ok, it seems a json.
 		return true;
+	}
+
+	public static String trim(Object str) {
+		if (str == null) return "";
+		if (str instanceof String) return ((String)str).toString();
+		return str.toString().trim();
+	}
+
+	public static String dup(String content, int times) {
+		StringBuilder b = new StringBuilder();
+		if (times > 0) {
+			for (int i = 0; i < times; i++) {
+				b.append(content);
+			}
+			return b.toString();
+		} else {
+			return content;
+		}
+	}
+
+	public static String join(String joiner, Object[] args) {
+		joiner = Optional.ofNullable(joiner).orElse("");
+		StringBuilder b = new StringBuilder();
+		if (args == null || args.length == 0) return "";
+
+		for (Object arg : args) {
+			if (arg ==null) {
+				b.append("null");
+			} else {
+				b.append(arg);
+			}
+			b.append(joiner);
+		}
+		if (b.length() > 0) b.setLength(b.length() - joiner.length());
+		return b.toString();
 	}
 }

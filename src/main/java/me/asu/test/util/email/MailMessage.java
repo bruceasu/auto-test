@@ -48,6 +48,14 @@ public class MailMessage {
 		this.tos = new String[]{to};
 		this.content = content;
 	}
+
+	public MailMessage(String subject, String from, String to, String content, String[] fileNames) {
+		this.subject = subject;
+		this.from = from;
+		this.tos = new String[]{to};
+		this.content = content;
+		this.fileNames = fileNames;
+	}
 	public static MailMessageBuilder builder() {
 		return new MailMessageBuilder();
 	}

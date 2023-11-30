@@ -1,11 +1,6 @@
 package me.asu.test.alerter;
 
-import java.awt.BorderLayout;
-import java.awt.Component;
-import java.awt.Dimension;
-import java.awt.FlowLayout;
-import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ComponentAdapter;
@@ -13,14 +8,8 @@ import java.awt.event.ComponentEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import javax.swing.JButton;
-import javax.swing.JComponent;
-import javax.swing.JFrame;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JTextPane;
-import javax.swing.KeyStroke;
-import javax.swing.SwingUtilities;
+import javax.swing.*;
+
 import me.asu.test.util.GUITools;
 
 public class ShowReportDialog extends JFrame {
@@ -32,7 +21,7 @@ public class ShowReportDialog extends JFrame {
 
 	public ShowReportDialog(String contentType, String content) {
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		setTitle("测试报告");
+		setTitle("Report");
 		setContentPane(contentPane);
 //		getRootPane().setContentPane(contentPane);
 		getRootPane().setDefaultButton(buttonOK);
@@ -67,8 +56,13 @@ public class ShowReportDialog extends JFrame {
 
 		GUITools.attachKeyListener(reportData);
 
+		// Set a monospaced font for the JTextPane
+		Font font = new Font("Monospaced", Font.PLAIN, 12);
+		reportData.setFont(font);
+
 		reportData.setContentType(contentType);
 		reportData.setText(content);
+
 
 	}
 
@@ -146,6 +140,11 @@ public class ShowReportDialog extends JFrame {
 		reportData.setEditable(false);
 		reportData.setText("");
 		//reportData.setLineWrap(false);
+		// Wrap JTextPane in a JPanel with FlowLayout to prevent line wrapping
+//		JPanel noWrapPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+//		noWrapPanel.add(reportData);
+//		noWrapPanel.setBorder(BorderFactory.createEmptyBorder());
+
 		scrollPane1.setViewportView(reportData);
 
 		final JPanel panel2 = new JPanel();

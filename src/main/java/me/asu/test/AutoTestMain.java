@@ -22,13 +22,8 @@ import me.asu.test.reporter.TestReporter;
 import me.asu.test.testcase.TestDirGenerator;
 import me.asu.test.testcase.TestRunner;
 import me.asu.test.testcase.TestSuite;
-import me.asu.test.util.ClassUtils;
-import me.asu.test.util.ExcelUtils;
-import me.asu.test.util.FileUtils;
-import me.asu.test.util.StringUtils;
-import me.asu.test.util.TableGenerator;
-import org.nutz.lang.Lang;
-import org.nutz.lang.Strings;
+import me.asu.test.util.*;
+import me.asu.test.util.email.MailUtil;
 
 /**
  * Run the auto test case script.
@@ -39,7 +34,7 @@ import org.nutz.lang.Strings;
 public class AutoTestMain {
 
 	public static void main(String[] args) throws Exception {
-		System.setProperty("app.command-line", Strings.join(" ", args));
+		System.setProperty("app.command-line", StringUtils.join(" ", args));
 		final EnvContext envContext = new EnvContext();
 		Map<String, String> options = Collections.emptyMap();
 		try {
@@ -119,14 +114,16 @@ public class AutoTestMain {
 			System.exit(0);
 		}
 
+		String file = "application-default.properties";
 		ApplicationConfig appCfg;
 		if (options.containsKey("-c")) {
 			// load from custom file
-			appCfg = new ApplicationConfig(options.get("-c"));
-		} else {
-			// just load default
-			appCfg = new ApplicationConfig("application-default.properties");
+			file = options.get("-c");
+
 		}
+		appCfg = new ApplicationConfig(file);
+		MailUtil.loadConfigProperties(file);
+
 		envContext.setAppCfg(appCfg);
 
 		if (options.containsKey("--work-path")) {
@@ -147,7 +144,7 @@ public class AutoTestMain {
 				if (Files.exists(Paths.get(jar))) {
 					ClassUtils.addJarToClasspath(jar);
 				} else {
-					throw Lang.makeThrow("%s 不存在。", jar);
+					throw LangUtil.makeThrow("%s 不存在。", jar);
 				}
 			}
 		}
@@ -169,13 +166,22 @@ public class AutoTestMain {
 			envContext.put("test.alerter.type",
 					envContext.getCfg("test.alerter.type", SimpleAlerter.class.getName()));
 		}
+		// enable global proxy for some test.
+		String socksProxyHost = appCfg.get("test.socksProxyHost");
+		String socksProxyPort = appCfg.get("test.socksProxyPort");
+		if (StringUtils.isNotEmpty(socksProxyPort)){
+			System.setProperty("socksProxyPort",socksProxyPort);
+		}
+		if (StringUtils.isNotEmpty(socksProxyHost)) {
+			System.setProperty("socksProxyHost",socksProxyHost);
+		}
 	}
 
 	private static void processReportAndNotification(EnvContext envContext,
 			TestSuite testSuite) {
 		// 1. create reporter
 		String reporterName = (String) envContext.get("test.reporter.type");
-		if (Strings.isBlank(reporterName)) {
+		if (StringUtils.isEmpty(reporterName)) {
 			reporterName = "me.asu.test.reporter.ConsoleReporter";
 		}
 		TestReporter report = ClassUtils.newInstance(reporterName);
@@ -183,7 +189,7 @@ public class AutoTestMain {
 //		System.out.println(reportData);
 		// 2. notify
 		String alertName = (String) envContext.get("test.alerter.type");
-		if (Strings.isBlank(alertName)) {
+		if (StringUtils.isEmpty(alertName)) {
 			alertName = "me.asu.test.alerter.SimpleAlerter";
 		}
 		Alerter alerter = ClassUtils.newInstance(alertName);
@@ -212,7 +218,7 @@ public class AutoTestMain {
 		System.setProperty("app.work-directory", caseDir);
 		Path path = Paths.get(caseDir);
 		if (!Files.isDirectory(path)) {
-			throw new IllegalStateException(caseDir + "不是一个目录");
+			throw new IllegalStateException(caseDir + " is not a directory.");
 		}
 
 		TestSuite testSuite = TestSuite.createTestSuite(caseDir);
@@ -243,7 +249,7 @@ public class AutoTestMain {
 				case "--conf":
 					i++;
 					if (i < args.length) {
-						options.put("c", args[i]);
+						options.put("-c", args[i]);
 						options.put("--conf", args[i]);
 						break;
 					} else {
@@ -309,28 +315,26 @@ public class AutoTestMain {
 		return Collections.unmodifiableMap(options);
 	}
 
-	/**
-	 * 帮助
-	 */
 	private static void usage() {
 		//@formatter:off
 		StringBuilder builder = new StringBuilder();
-		builder.append("使用手册： java -jar auto-test.jar [选项]\n");
-		builder.append("选项:\n");
-		builder.append("\t-h --help         打印本帮助。\n");
-		builder.append("\t-c --conf <配置.properties>\n")
-			   .append("\t                  配置文件, 里面的配置会覆盖 application-default.properties 的相同键的值。默认为application.properties\n");
-		builder.append("\t-x --excels <excels格式仓库文件>\n")
-			   .append("\t                  excels格式的用例仓库, 此选项会覆盖配置文件里的设置，如果同时存在目录格式的仓库，忽略目录格式的仓库的设置测试用例.\n");
-		builder.append("\t-d --directory <目录格式仓库的目录>\n")
-			   .append("\t                  目录格式的用例仓库, 此选项会覆盖配置文件里的设置.\n");
-		builder.append("\t   --work-path <工作目录>\n")
-			   .append("\t                  工作目录, 用例仓库会被复制到此目录, default is ${java.io.tmpdir}(" + System.getProperty("java.io.tmpdir")).append(")/随机字符\n");
-		builder.append("\t   --reporter <报告输出方式实现类>\n")
-			   .append("\t                  报告输出方式实现类全限定名，默认为 me.asu.test.reporter.ConsoleReporter. \n");
-		builder.append("\t   --alerter <测试通知实现类>\n")
-			   .append("\t                  测试通知实现类全限定名，默认为 me.asu.test.alerter.SimpleAlerter\n");
-		builder.append("\t   --java-lib     额外的jar依赖文件，默认为空\n");
+		builder.append("Usage Manual: java -jar auto-test.jar [options]\n");
+		builder.append("Options:\n");
+		builder.append("\t-h --help         Print this help.\n");
+		builder.append("\t-c --conf <config.properties>\n")
+			   .append("\t                  Configuration file, settings inside will override the same keys in application-default.properties. Default is application.properties.\n");
+		builder.append("\t-x --excels <excels format case repository>\n")
+			   .append("\t                  Excels format case repository, this option will override settings in the configuration file. If a directory format case repository also exists, it will ignore that.\n");
+		builder.append("\t-d --directory <directory format case repository>\n")
+			   .append("\t                  Directory format case repository, this option will override settings in the configuration file.\n");
+		builder.append("\t   --work-path <working directory>\n")
+			   .append("\t                  Working directory, the case repository will be copied to this directory, default is ${java.io.tmpdir}(" + System.getProperty("java.io.tmpdir")).append(")/random characters\n");
+		builder.append("\t   --reporter <report output method class>\n")
+			   .append("\t                  Fully qualified class name of report output method, default is me.asu.test.reporter.ConsoleReporter.\n");
+		builder.append("\t   --alerter <test notification class>\n")
+			   .append("\t                  Fully qualified class name of test notification, default is me.asu.test.alerter.SimpleAlerter.\n");
+		builder.append("\t   --java-lib     Additional jar dependencies, default is empty.\n");
+
 		//@formatter:on
 
 		System.out.println(builder.toString());

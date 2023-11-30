@@ -21,6 +21,8 @@ package me.asu.test.util;
  * limitations under the License.
  */
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
@@ -30,16 +32,14 @@ import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.Comparator;
 import java.util.Iterator;
-import org.nutz.log.Log;
-import org.nutz.log.Logs;
 
 /**
  * Utility class that handles byte arrays, conversions to/from other types,
  * comparisons, hash code generation, manufacturing keys for HashMaps or
  * HashSets, etc.
  */
+@Slf4j
 public class Bytes {
-  private static final Log LOG = Logs.get();
 
   /**
    * Size of boolean in bytes
@@ -305,7 +305,7 @@ public class Bytes {
     try {
       return new String(b, off, len, "utf-8");
     } catch (UnsupportedEncodingException e) {
-      LOG.error("UTF-8 not supported?", e);
+      log.error("UTF-8 not supported?", e);
       return null;
     }
   }
@@ -347,7 +347,7 @@ public class Bytes {
         }
       }
     } catch (UnsupportedEncodingException e) {
-      LOG.error("ISO-8859-1 not supported?", e);
+      log.error("ISO-8859-1 not supported?", e);
     }
     return result.toString();
   }
@@ -421,7 +421,7 @@ public class Bytes {
     try {
       return s.getBytes("utf-8");
     } catch (UnsupportedEncodingException e) {
-      LOG.error("UTF-8 not supported?", e);
+      log.error("UTF-8 not supported?", e);
       return null;
     }
   }
@@ -430,7 +430,7 @@ public class Bytes {
     try {
       return s.getBytes(charset);
     } catch (UnsupportedEncodingException e) {
-      LOG.error(charset + " not supported?", e);
+      log.error(charset + " not supported?", e);
       return null;
     }
   }
@@ -1011,7 +1011,7 @@ public class Bytes {
     try {
       intervalBI = diffBI.divide(splitsBI);
     } catch (Exception e) {
-      LOG.error("Exception caught during division", e);
+      log.error("Exception caught during division", e);
       return null;
     }
 

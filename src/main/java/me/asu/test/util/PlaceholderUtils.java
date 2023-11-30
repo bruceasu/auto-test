@@ -1,9 +1,10 @@
 package me.asu.test.util;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.util.HashMap;
 import java.util.Map;
-import org.nutz.log.Log;
-import org.nutz.log.Logs;
+
 
 /**
  * PlaceholderUtils.
@@ -12,9 +13,8 @@ import org.nutz.log.Logs;
  * @version 1.0.0
  * @since 2017-11-30 9:50
  */
+@Slf4j
 public class PlaceholderUtils {
-
-	private static final Log logger = Logs.get();
 
 	/**
 	 * Prefix for system property placeholders: "${"
@@ -43,10 +43,11 @@ public class PlaceholderUtils {
 						buf.replace(startIndex, endIndex + PLACEHOLDER_SUFFIX.length(), str);
 						nextIndex = startIndex + str.length();
 					} else {
-						logger.warn("Could not resolve placeholder '" + placeholder + "' in [" + text + "] ");
+						log.warn("Could not resolve placeholder '{}' in [{}] ", placeholder, text);
 					}
 				} catch (Exception ex) {
-					logger.warn("Could not resolve placeholder '" + placeholder + "' in [" + text + "]: " + ex);
+					log.warn("Could not resolve placeholder '{}' in [{}]: {}",
+							 placeholder, text, ex.getMessage());
 				}
 				startIndex = buf.indexOf(PLACEHOLDER_PREFIX, nextIndex);
 			} else {

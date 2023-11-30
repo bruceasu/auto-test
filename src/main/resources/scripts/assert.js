@@ -7,12 +7,34 @@ if (!Array.isArray) {
 
 var Assert = {};
 
+Assert.assertEmpty = function(actual, message) {
+	if (actual === undefined || actual === null || actual === "" ) {
+		return;
+	}
+	if (message == undefined || message == '') {
+		throw "Expectation is empty, actuality is" + actual;
+	} else {
+		throw message;
+	}
+}
+
+Assert.assertNotEmpty = function(actual, message) {
+	if (!(actual === undefined || actual === null || actual === "")) {
+    		return;
+    }
+	if (message == undefined || message == '') {
+		throw "Expectation is not empty, actuality is empty";
+	} else {
+		throw message;
+	}
+}
+
 Assert.assertTrue = function(actual, message) {
 	if (actual) {
 		return;
 	}
 	if (message == undefined || message == '') {
-		throw "期望是true, 实际是" + actual;
+		throw "Expectation is true, actuality is" + actual;
 	} else {
 		throw message;
 	}
@@ -23,7 +45,7 @@ Assert.assertFalse = function(actual, message) {
 		return;
 	}
 	if (message == undefined || message == '') {
-		throw "期望是false, 实际是" + actual;
+		throw "Expectation is false, actuality is" + actual;
 	} else {
 		throw message;
 	}
@@ -34,7 +56,7 @@ Assert.assertEquals = function(expected, actual, message) {
 		return;
 	}
 	if (message == undefined || message == '') {
-		throw "期望是" + expected + ", 实际是" + actual;
+		throw "Expectation is " + expected + ", actuality is" + actual;
 	} else {
 		throw message;
 	}
@@ -45,7 +67,7 @@ Assert.assertNotEquals = function(expected, actual, message) {
 		return;
 	}
 	if (message == undefined || message == '') {
-		throw "期望是" + expected + ", 实际是" + actual;
+		throw "Expectation" + expected + ", actuality" + actual;
 	} else {
 		throw message;
 	}
@@ -57,14 +79,14 @@ Assert.assertArrayEquals = function(expected, actual, message) {
 	}
 	if (expected == undefined || actual == undefined) {
 		if (message == undefined || message == '') {
-			throw "期望 " + expected + " 和 " + actual + " 相等，实际不等。";
+			throw "Expect " + expected + " and " + actual + " to be equal, but not actually equal.";
 		} else {
 			throw message;
 		}
 	}
 	if (expected.sort().toString() !== actual.sort().toString()) {
 		if (message == undefined || message == '') {
-			throw "期望 " + expected + " 和 " + actual + " 相等，实际不等。";
+			throw "Expect " + expected + " and " + actual + " to be equal, but not actually equal.";
 		} else {
 			throw message;
 		}
@@ -74,7 +96,7 @@ Assert.assertArrayEquals = function(expected, actual, message) {
 Assert.assertArrayNotEquals = function(expected, actual, message) {
 	if (expected == undefined && actual == undefined) {
 		if (message == undefined || message == '') {
-			throw "期望 " + expected + " 和 " + actual + " 不等，实际相等。";
+			throw "Expect " + expected + " and " + actual + " not to be equal, but actually equal.";
 		} else {
 			throw message;
 		}
@@ -85,7 +107,7 @@ Assert.assertArrayNotEquals = function(expected, actual, message) {
 
 	if (expected.sort().toString() === actual.sort().toString()) {
 		if (message == undefined || message == '') {
-			throw "期望 " + expected + " 和 " + actual + " 不等，实际相等。";
+			throw "Expect " + expected + " and " + actual + "not to be equal, but actually equal.";
 		} else {
 			throw message;
 		}
@@ -94,7 +116,7 @@ Assert.assertArrayNotEquals = function(expected, actual, message) {
 
 Assert.fail = function(message) {
 	if (message == undefined || message == '') {
-		throw "失败了。"
+		throw "Fail."
 	} else {
 		throw message;
 	}
@@ -106,7 +128,7 @@ Assert.assertContains = function(expected, actual, message) {
 		return flag;
 	}
 	if (message == undefined || message == '') {
-		throw actual + " 不包含 " + expected + " 。";
+		throw actual + " is not include " + expected + " 。";
 	} else {
 		throw message;
 	}
@@ -118,7 +140,7 @@ Assert.assertNotContains = function(expected, actual, message) {
 		return flag;
 	}
 	if (message == undefined || message == '') {
-		throw actual + " 包含了 " + expected + " 。";
+		throw actual + " contains " + expected + ".";
 	} else {
 		throw message;
 	}

@@ -44,7 +44,6 @@ import javax.swing.plaf.metal.DefaultMetalTheme;
 import javax.swing.plaf.metal.MetalLookAndFeel;
 import javax.swing.text.JTextComponent;
 import javax.swing.undo.UndoManager;
-import org.nutz.lang.Strings;
 
 public class GUITools {
 
@@ -187,7 +186,7 @@ public class GUITools {
 					case KeyEvent.VK_C:
 						String selectedText = component.getSelectedText();
 
-						if (Strings.isBlank(selectedText)) {
+						if (StringUtils.isEmpty(selectedText)) {
 							selectedText = component.getText();
 						}
 						//设置字符串
@@ -222,7 +221,7 @@ public class GUITools {
 						break;
 					case KeyEvent.VK_X:
 						String selectedText2 = component.getSelectedText();
-						if (Strings.isBlank(selectedText2)) {
+						if (StringUtils.isEmpty(selectedText2)) {
 							selectedText2 = component.getText();
 							component.setText("");
 						} else {

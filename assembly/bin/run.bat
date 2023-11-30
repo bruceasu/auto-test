@@ -11,7 +11,6 @@ set JAR=%APP_NAME%-%VERSION%.jar
 set MAIN_CLASS=me.asu.test.bootstrap.AutoTestMain
 set APP_ID=127.0.0.1:1
 set APP_CONF_DIR=${APP_DIR}/conf
-::: 绝对路径的配置文件, 如果是windows, 放在一起就好了
 set APP_ARGS= %APP_HOME%/conf/application.properties
 
 @rem Add default JVM options here. You can also use JAVA_OPTS and VERTX_OPTS

@@ -5,8 +5,8 @@ import java.util.Arrays;
 import java.util.List;
 import me.asu.test.testcase.TestCase;
 import me.asu.test.testcase.TestSuite;
+import me.asu.test.util.StringUtils;
 import me.asu.test.util.TableGenerator;
-import org.nutz.lang.Strings;
 
 /**
  * HtmReporter.
@@ -29,14 +29,15 @@ public class HtmReporter implements TestReporter {
 		}
 		StringBuilder builder = new StringBuilder();
 		builder.append("<style type=\"text/css\">th {white-space: nowrap;}</style>\n");
-		builder.append(String.format("<h1 style=\"text-align: center\">测试报告</h1><br>"));
-		builder.append(String.format("<h2>测试组：%s</h2><br>", suite.getTestDir()));
+		builder.append(String.format("<h1 style=\"text-align: center\">Test Report</h1><br>"));
+		builder.append(String.format("<h2>Test Group：%s</h2><br>", suite.getTestDir()));
 
 		int suc = 0;
 		int err = 0;
-		builder.append(String.format("<h2>测试结果： </h2><br>"));
+		builder.append(String.format("<h2>Test Result： </h2><br>"));
 		List<String> headers = Arrays
-				.asList(" 用例 ", " 是否忽略 ", " 是否执行 ", " 结果 ", " 信息 ", " 异常 ", " 描述 ");
+				.asList(" Case ", " Ignored? ", " Executed? ", " Result ", " Information ",
+						" Exception ", " Description ");
 		List<List<String>> rows = new ArrayList<>();
 		List<TestCase> testCases = suite.getTestCases();
 		int ignore = 0;
@@ -61,15 +62,15 @@ public class HtmReporter implements TestReporter {
 			rows.add(row);
 		}
 		generateTable(headers, rows, builder);
-		builder.append(String.format("<h2>测试成功率： </h2><br>"));
+		builder.append(String.format("<h2>Success Rate： </h2><br>"));
 		rows.clear();
 		rows.add(Arrays.asList("" + suc, "" + err));
 		int size = suc + err;
 		size = size == 0 ? 1 : size;
-		rows.add(Arrays.asList(TableGenerator.makeAlignCenter("成功率"), (suc * 100 / size) + "%"));
+		rows.add(Arrays.asList(TableGenerator.makeAlignCenter("Rate"), (suc * 100 / size) + "%"));
 		List<String> titles = Arrays.asList(
-				TableGenerator.makeAlignCenter("成功数"),
-				TableGenerator.makeAlignCenter("失败数"));
+				TableGenerator.makeAlignCenter("Success"),
+				TableGenerator.makeAlignCenter("Fail"));
 		generateTable(titles, rows, builder);
 		String report = builder.toString();
 
@@ -98,7 +99,7 @@ public class HtmReporter implements TestReporter {
 		return b.toString();
 	}
 	private String escapeHtml(String content) {
-		if (Strings.isBlank(content)) {
+		if (StringUtils.isEmpty(content)) {
 			return "";
 		}
 		return content.replace("&", "&amp;")

@@ -11,13 +11,11 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
+
+import lombok.extern.slf4j.Slf4j;
 import me.asu.test.util.Bytes;
+import me.asu.test.util.JacksonUtils;
 import me.asu.test.util.StringUtils;
-import org.nutz.json.Json;
-import org.nutz.json.JsonFormat;
-import org.nutz.lang.Strings;
-import org.nutz.log.Log;
-import org.nutz.log.Logs;
 
 /**
  * Created by suk on 2018/7/15.
@@ -26,9 +24,8 @@ import org.nutz.log.Logs;
  * @version 1.0.0
  * @since 2018/7/15
  */
+@Slf4j
 public class TestDirGenerator {
-
-	Log LOGGER = Logs.get();
 	private final String dir;
 	private final Multimap<String, LinkedHashMap<String, String>> repo;
 	private final Map<String, String> snippets = new HashMap<>();
@@ -54,7 +51,7 @@ public class TestDirGenerator {
 		}
 		Set<String> keySet = repo.keySet();
 		for (String key : keySet) {
-			if ("init.js".equals(key) || "desctory.js".equals(key) || "testcase".equals(key)) {
+			if ("init.js".equals(key) || "destroy.js".equals(key) || "testcase".equals(key)) {
 				continue;
 			}
 			if ("snippets".equalsIgnoreCase(key)) {
@@ -64,12 +61,12 @@ public class TestDirGenerator {
 				generateLib(libPath, key, repo.get(key));
 			} else {
 				// ignore
-				LOGGER.infof("忽略%s", key);
+				log.info("Ignored {}", key);
 			}
 		}
 
 		generateInitJs(path);
-		generateDesctroyJs(path);
+		generateDestroyJs(path);
 		generateCase(path);
 	}
 
@@ -133,7 +130,7 @@ public class TestDirGenerator {
 				config.put("order", iOrder);
 				config.put("ignore", Boolean.valueOf(row.get("ignore").toLowerCase()));
 
-				String json = Json.toJson(config, JsonFormat.nice());
+				String json = JacksonUtils.serializeForPrint(config);
 				Files.write(filePath, Bytes.toBytes("var config = " + json + ";\nvar test_case_context = {};\n"));
 
 				// 2. create main.js
@@ -142,7 +139,7 @@ public class TestDirGenerator {
 				if ("custom".equalsIgnoreCase(type)) {
 					String source = row.get("custom_code");
 					if (StringUtils.isEmpty(source)) {
-						String content = "var msg = '没有custom_code';\nprint(msg);\n throw msg;\n";
+						String content = "var msg = 'No custom_code';\nprint(msg);\n throw msg;\n";
 						Files.write(mainFile, Bytes.toBytes(content));
 					} else {
 						String[] split = source.split("\\n");
@@ -155,7 +152,7 @@ public class TestDirGenerator {
 				} else {
 					// 不检查格式是否正确.
 					StringBuilder builder = new StringBuilder("load(current_test_case.getDir() + \"/config.js\")\n"
-							+ "/* 全局 */\n");
+							+ "/* Global */\n");
 					builder.append("var type=\"").append(type.toUpperCase()).append("\";\n");
 					String url = row.get("url");
 					if (StringUtils.isEmpty(url)) {
@@ -255,19 +252,19 @@ public class TestDirGenerator {
 		if (t.startsWith("//@lib:")) {
 			String libName = t.substring("//@lib:".length());
 			String libContent = libs.get(libName);
-			if (Strings.isNotBlank(libContent)) {
+			if (StringUtils.isNotEmpty(libContent)) {
 				builder.append(libContent).append('\n');
 			}
 		} else if (t.startsWith("//@snippet:")) {
 			String snippetName = t.substring("//@snippet:".length());
 			String snippetContent = snippets.get(snippetName);
-			if (Strings.isNotBlank(snippetContent)) {
+			if (StringUtils.isNotEmpty(snippetContent)) {
 				builder.append(snippetContent).append('\n');
 			}
 		} else if (t.startsWith("//@globalVariables:")) {
 			String varName = t.substring("//@snippet:".length());
 			String varContent = globalVariables.get(varName);
-			if (Strings.isNotBlank(varContent)) {
+			if (StringUtils.isNotEmpty(varContent)) {
 				builder.append('"').append(varContent).append('"').append('\n');
 			}
 		} else {
@@ -309,7 +306,7 @@ public class TestDirGenerator {
 		}
 	}
 
-	private void generateDesctroyJs(Path path) throws IOException {
+	private void generateDestroyJs(Path path) throws IOException {
 		Collection<LinkedHashMap<String, String>> rows = repo.get("destroy.js");
 		if (!rows.isEmpty()) {
 			String load = String.format("%s%sglobal_context.js",

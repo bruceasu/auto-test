@@ -1,1 +1,1 @@
-print("destory test suite.")
+print("destroy test suite.")

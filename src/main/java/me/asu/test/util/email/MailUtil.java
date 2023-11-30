@@ -1,60 +1,41 @@
 package me.asu.test.util.email;
 
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.UnsupportedEncodingException;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.Hashtable;
-import java.util.List;
-import java.util.Properties;
+import lombok.extern.slf4j.Slf4j;
+import me.asu.test.util.StringUtils;
 
 import javax.activation.DataHandler;
-import javax.activation.DataSource;
 import javax.activation.FileDataSource;
-import javax.mail.BodyPart;
-import javax.mail.Folder;
-import javax.mail.Message;
+import javax.activation.FileTypeMap;
+import javax.mail.*;
 import javax.mail.Message.RecipientType;
-import javax.mail.MessagingException;
-import javax.mail.Multipart;
-import javax.mail.NoSuchProviderException;
-import javax.mail.Session;
-import javax.mail.Store;
-import javax.mail.Transport;
-import javax.mail.internet.InternetAddress;
-import javax.mail.internet.MimeBodyPart;
-import javax.mail.internet.MimeMessage;
-import javax.mail.internet.MimeMultipart;
-import javax.mail.internet.MimeUtility;
+import javax.mail.internet.*;
+import javax.mail.util.ByteArrayDataSource;
 import javax.naming.Context;
 import javax.naming.NamingEnumeration;
-import javax.naming.NamingException;
 import javax.naming.directory.Attribute;
 import javax.naming.directory.Attributes;
 import javax.naming.directory.DirContext;
 import javax.naming.directory.InitialDirContext;
-import me.asu.test.util.StringUtils;
-import org.nutz.log.Log;
-import org.nutz.log.Logs;
-
+import java.io.*;
+import java.nio.file.Files;
+import java.text.SimpleDateFormat;
+import java.util.*;
 /**
  * Copyright(c) 2018
  *
  * @author Victor
  * @since 2018/4/4.
  */
+@Slf4j
 public class MailUtil {
 
-	static Log LOGGER = Logs.get();
 	private static String configFile = "application.properties";
 	public static String SMTPServer;
 	public static String SMTPUsername;
+	public static int SMTPPort = 25; // 587 for ssl
+	public static String SMTPDisplayName;
+	public static String SMTPFrom;
 	public static String SMTPPassword;
 	public static String POP3Server;
 	public static String POP3Username;
@@ -62,14 +43,17 @@ public class MailUtil {
 	public static String anonymous;
 
 	static {
+		// only for test.
+//		System.setProperty("socksProxyHost","localhost");
+//		System.setProperty("socksProxyPort","1080");
 		try {
-			loadConfigProperties();
+			loadConfigProperties(configFile);
 		} catch (FileNotFoundException e) {
 			throw new RuntimeException("", e);
 		}
 	}
 
-	public static void main(String[] args) {
+	public static void main(String[] args) throws Exception {
 //		//发送邮件
 //		MailMessage mail = new MailMessage(
 //				"test-subject",
@@ -90,10 +74,13 @@ public class MailUtil {
 //		receiveEmail(POP3Server, POP3Username, POP3Password);
 
 		//发送匿名邮件
-		MailMessage anonymousMail = new MailMessage("subject",
-				"abcd@efg.net", "abcd@efg.net", "content");
+		MailMessage mail = new MailMessage("subject",
+				null, "svictor@gwfx.jp", "content",
+										   new String[]{"C:\\Users\\svictor\\workspace\\tools\\auto-test\\src\\main\\resources\\log4j.properties"});
 		//anonymousMail.setFileNames(attachments);
-		sendAnonymousEmail(anonymousMail);
+//		sendAnonymousEmail(mail);
+		MailUtil.loadConfigProperties("C:\\Users\\svictor\\workspace\\gx-java\\auto-test-cases\\gx-test.properties");
+		sendEmail(mail);
 	}
 
 	public static boolean checkSmtpServerIsReady() {
@@ -105,7 +92,7 @@ public class MailUtil {
 	/**
 	 * Load configuration properties to initialize attributes.
 	 */
-	private static void loadConfigProperties() throws FileNotFoundException {
+	public static void loadConfigProperties(String configFile) throws FileNotFoundException {
 
 		File f = new File(configFile);
 		InputStream in = null;
@@ -122,17 +109,26 @@ public class MailUtil {
 				props.load(in);
 			}
 		} catch (FileNotFoundException e) {
-			LOGGER.error("File not found at " + f.getAbsolutePath(), e);
+			log.error("File not found at " + f.getAbsolutePath(), e);
 		} catch (IOException e) {
-			LOGGER.error("Error reading config file " + f.getName(), e);
+			log.error("Error reading config file " + f.getName(), e);
 		}
 		SMTPServer = props.getProperty("mail.smtp.server");
+		String p = props.getProperty("mail.smtp.port");
+		if (StringUtils.isNotEmpty(p)) {
+			SMTPPort = Integer.parseInt(p.trim());
+		}
+		SMTPDisplayName = props.getProperty("mail.smtp.displayname");
+		SMTPFrom = props.getProperty("mail.smtp.from");
 		SMTPUsername = props.getProperty("mail.smtp.username");
 		SMTPPassword = props.getProperty("mail.smtp.password");
+
 		POP3Server = props.getProperty("mail.pop3.server");
 		POP3Username = props.getProperty("mail.pop3.username");
 		POP3Password = props.getProperty("mail.pop3.password");
 		anonymous = props.getProperty("mail.anonymous.username");
+
+//		System.getProperties().list(System.out);
 	}
 
 	/**
@@ -191,7 +187,7 @@ public class MailUtil {
 								break;
 							}
 						} catch (Exception e) {
-							LOGGER.error("", e);
+							log.error("", e);
 							buf.append(e.toString()).append("\r\n");
 							continue;
 						}
@@ -203,7 +199,7 @@ public class MailUtil {
 				}
 			}
 		} catch (Throwable e) {
-			LOGGER.error("", e);
+			log.error("", e);
 			return false;
 		}
 		return true;
@@ -250,6 +246,7 @@ public class MailUtil {
 	private static boolean sendEmail(String smtpHost, String subject,
 			String from, String[] tos, String[] ccs, String[] bccs,
 			String content, File[] attachments, boolean isAnonymousEmail) {
+//		System.out.println("Attach: " + Arrays.asList(attachments));
 		// parameter check
 		if (isAnonymousEmail && smtpHost == null) {
 			throw new IllegalStateException( "When sending anonymous email, param smtpHost cannot be null");
@@ -258,13 +255,14 @@ public class MailUtil {
 			subject = "Auto-generated subject";
 		}
 		if (from == null) {
-			throw new IllegalArgumentException("Sender's address is required.");
+			from = SMTPFrom;
+//			throw new IllegalArgumentException("Sender's address is required.");
 		}
 		if (tos == null || tos.length == 0) {
 			throw new IllegalArgumentException("At lease 1 receive address is required.");
 		}
-		boolean hasAttachments = attachments == null || attachments.length == 0;
-		if (content == null && hasAttachments) {
+		boolean withoutAttachments = attachments == null || attachments.length == 0;
+		if (content == null && withoutAttachments) {
 			throw new IllegalArgumentException("Content and attachments cannot be empty at the same time");
 		}
 		if (attachments != null && attachments.length > 0) {
@@ -297,6 +295,14 @@ public class MailUtil {
 			//normal email does not need param smtpHost and uses the default host SMTPServer
 			props.put("mail.smtp.host", SMTPServer);
 			props.put("mail.smtp.auth", "true");
+			if (SMTPPort == 25) {
+				props.put("mail.smtp.port", SMTPPort);
+			} else {
+				props.put("mail.smtp.port", SMTPPort);
+				props.put("mail.smtp.starttls.enable", "true");
+			}
+
+
 			session = Session.getInstance(props, new MailAuthenticator(SMTPUsername, SMTPPassword));
 		}
 		// create message
@@ -305,8 +311,11 @@ public class MailUtil {
 			//Multipart is used to store many BodyPart objects.
 			Multipart multipart = new MimeMultipart();
 
-			BodyPart part = new MimeBodyPart();
+			MimeBodyPart part = new MimeBodyPart();
 			part.setContent(content, "text/html;charset=utf-8");
+			part.setHeader("Content-Type","text/html;charset=utf-8");
+			part.setHeader("Content-Transfer-Encoding", "base64");
+
 			// add email content part.
 			multipart.addBodyPart(part);
 
@@ -314,23 +323,39 @@ public class MailUtil {
 			if (attachments != null && attachments.length > 0) {
 				for (File attachment : attachments) {
 					String fileName = attachment.getName();
-					DataSource dataSource = new FileDataSource(attachment);
+					FileDataSource dataSource = new FileDataSource(attachment);
+//	\				byte[] bytes = Files.readAllBytes(attachment.toPath());
+//					log.debug("Sending Attached file " + fileName);
+//					if (StringUtils.isEmpty(fileName) ||
+//						bytes == null || bytes.length == 0) {
+//						continue;
+//					}
+//					attachmentBodyPart.setFileName(fileName);
+//					me.asu.test.util.email.ByteArrayDataSource dataSource =
+//							new me.asu.test.util.email.ByteArrayDataSource();
+//					dataSource.setName(fileName);
+//					dataSource.setBytes(bytes);
+//					String contentType =
+//							FileTypeMap.getDefaultFileTypeMap().getContentType(fileName);
+//					dataSource.setContentType(contentType);
 					DataHandler dataHandler = new DataHandler(dataSource);
-					part = new MimeBodyPart();
-					part.setDataHandler(dataHandler);
-					//solve encoding problem of attachments file name.
+					MimeBodyPart attachmentBodyPart = new MimeBodyPart();
+					attachmentBodyPart.setDataHandler(dataHandler);
+					//solve encoding problem of attachments files' names.
 					try {
 						fileName = MimeUtility.encodeText(fileName);
 					} catch (UnsupportedEncodingException e) {
-						LOGGER.error(
+						log.error(
 								"Cannot convert the encoding of attachments file name.", e);
 					}
 					//set attachments the original file name. if not set,
 					//an auto-generated name would be used.
-					part.setFileName(fileName);
-					multipart.addBodyPart(part);
+					attachmentBodyPart.setFileName(fileName);
+					multipart.addBodyPart(attachmentBodyPart);
 				}
 			}
+			msg.setContent(multipart);
+
 			try {
 				msg.setSubject(MimeUtility.encodeText(subject, "UTF-8", "B"));
 			} catch (UnsupportedEncodingException e) {
@@ -339,7 +364,16 @@ public class MailUtil {
 
 			msg.setSentDate(new Date());
 			//set sender
-			msg.setFrom(new InternetAddress(from));
+			if (SMTPDisplayName != null) {
+				try {
+					final InternetAddress address = new InternetAddress(from, SMTPDisplayName);
+					msg.setFrom(address);
+				} catch (UnsupportedEncodingException e) {
+					throw new RuntimeException(e);
+				}
+			} else {
+				msg.setFrom(new InternetAddress(from));
+			}
 			//set receiver,
 			for (String to : tos) {
 				msg.addRecipient(RecipientType.TO, new InternetAddress(to));
@@ -354,20 +388,22 @@ public class MailUtil {
 					msg.addRecipient(RecipientType.BCC, new InternetAddress(bcc));
 				}
 			}
-			msg.setContent(multipart);
+
 			//save the changes of email first.
 			msg.saveChanges();
 			//to see what commands are used when sending a email, use session.setDebug(true)
 			//session.setDebug(true);
 			//send email
 			Transport.send(msg);
-			LOGGER.info("Send email success.");
+			log.info("Send email success.");
 			System.out.println("Send html email success.");
 			return true;
 		} catch (NoSuchProviderException e) {
-			LOGGER.error("Email provider config error.", e);
+			log.error("Email provider config error.", e);
 		} catch (MessagingException e) {
-			LOGGER.error("Send email error.", e);
+			log.error("Send email error.", e);
+//		} catch (IOException e) {
+//			log.error("Attachment error.", e);
 		}
 		return false;
 	}
@@ -456,7 +492,7 @@ public class MailUtil {
 			store.close();
 			return true;
 		} catch (MessagingException e) {
-			LOGGER.error("MessagingException caught when use message object", e);
+			log.error("MessagingException caught when use message object", e);
 			return false;
 		}
 	}
@@ -478,7 +514,7 @@ public class MailUtil {
 					from = MimeUtility.decodeText(from);
 				}
 			} catch (Exception e) {
-				LOGGER.error("Decode string error. Origin string is: " + res, e);
+				log.error("Decode string error. Origin string is: " + res, e);
 			}
 			return from;
 		}

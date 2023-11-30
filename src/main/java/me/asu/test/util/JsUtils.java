@@ -1,8 +1,10 @@
 package me.asu.test.util;
 
 import java.io.File;
-import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.Reader;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import javax.script.Bindings;
 import javax.script.Compilable;
 import javax.script.CompiledScript;
@@ -10,7 +12,6 @@ import javax.script.Invocable;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
-import org.nutz.lang.Streams;
 
 /**
  * Created by suk on 2017/11/28.
@@ -28,13 +29,13 @@ public class JsUtils {
 	}
 
 	public static Object eval(ScriptEngine engine, File file)
-			throws FileNotFoundException, ScriptException {
+			throws IOException, ScriptException {
 		return eval(engine, file, null);
 	}
 
 	public static Object eval(ScriptEngine engine, File file, Bindings n)
-			throws FileNotFoundException, ScriptException {
-		Reader reader = Streams.fileInr(file);
+	throws IOException, ScriptException {
+		Reader reader = Files.newBufferedReader(file.toPath(), StandardCharsets.UTF_8);
 		if (n == null) {
 			return engine.eval(reader);
 		} else {
@@ -77,13 +78,13 @@ public class JsUtils {
 	}
 
 	public Object eval(File file)
-			throws FileNotFoundException, ScriptException {
+			throws IOException, ScriptException {
 		return eval(engine, file, null);
 	}
 
 	public Object eval(File file, Bindings n)
-			throws FileNotFoundException, ScriptException {
-		Reader reader = Streams.fileInr(file);
+			throws IOException, ScriptException {
+		Reader reader = Files.newBufferedReader(file.toPath(), StandardCharsets.UTF_8);
 		if (n == null) {
 			return engine.eval(reader);
 		} else {
@@ -104,7 +105,7 @@ public class JsUtils {
 		}
 	}
 
-	public Object callFuntion(String fn, Object... parameters)
+	public Object callFunction(String fn, Object... parameters)
 			throws ScriptException, NoSuchMethodException {
 		Invocable invoke = (Invocable) engine;
 		return invoke.invokeFunction(fn, parameters);
@@ -130,9 +131,9 @@ public class JsUtils {
 	}
 
 	public CompiledScript compile(File file)
-			throws ScriptException, FileNotFoundException {
+			throws ScriptException, IOException {
 		Compilable c = (Compilable) engine;
-		Reader reader = Streams.fileInr(file);
+		Reader reader = Files.newBufferedReader(file.toPath(), StandardCharsets.UTF_8);
 		return c.compile(reader);
 	}
 	/*

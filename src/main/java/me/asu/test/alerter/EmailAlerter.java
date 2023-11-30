@@ -1,5 +1,13 @@
 package me.asu.test.alerter;
 
+import lombok.extern.slf4j.Slf4j;
+import me.asu.test.config.EnvContext;
+import me.asu.test.testcase.TestSuite;
+import me.asu.test.util.StringUtils;
+import me.asu.test.util.email.MailMessage;
+import me.asu.test.util.email.MailMessage.MailMessageBuilder;
+import me.asu.test.util.email.MailUtil;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -11,14 +19,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
-import me.asu.test.config.EnvContext;
-import me.asu.test.testcase.TestSuite;
-import me.asu.test.util.StringUtils;
-import me.asu.test.util.email.MailMessage;
-import me.asu.test.util.email.MailMessage.MailMessageBuilder;
-import me.asu.test.util.email.MailUtil;
-import org.nutz.log.Log;
-import org.nutz.log.Logs;
 
 /**
  * SimpleAlerter.
@@ -27,28 +27,28 @@ import org.nutz.log.Logs;
  * @version 1.0.0
  * @since 2017-11-30 18:40
  */
+@Slf4j
 public class EmailAlerter implements Alerter {
 
-    Log log = Logs.get();
 
     @Override
     public void alert(TestSuite testSuite, String contentType, String reportData, EnvContext env) {
-        String mailTo = ((Map<String, String>) env.get("global_context")).get("global.mail_to");
-        String mailFrom = ((Map<String, String>) env.get("global_context")).get("global.mail_from");
-        String mailSubject = ((Map<String, String>) env.get("global_context"))
-                .get("global.mail_subject");
-        String cmdLine = System.getProperty("app.command-line");
-        String wd = System.getProperty("app.work-directory");
-        String xls = System.getProperty("app.excels-file");
+        String mailTo = env.getCfg("mail.to");
+        String mailFrom = env.getCfg("mail.smtp.from");
+        String mailSubject = env.getCfg("mail.subject");
+
+        String cmdLine = (String)env.get("app.command-line");
+        String wd = (String)env.get("app.work-directory");
+        String xls = (String)env.get("app.excels-file");
 
         //发送匿名邮件
         String htmlContent = !StringUtils.isEmpty(contentType) && contentType.contains("text/plain")
-                ? "<pre><code>" + reportData + "</code></pre>" : reportData;
-        htmlContent = "<p>命令行：" + cmdLine + "</p>" + htmlContent;
+                             ? "<pre><code>" + reportData + "</code></pre>" : reportData;
+        htmlContent = "<p>Command Line：" + cmdLine + "</p>" + htmlContent;
 
         String subject;
         if (StringUtils.isEmpty(mailSubject)) {
-            subject = "自动测试报告" + new Date();
+            subject = "Auto Test Report " + new Date();
         } else {
             subject = mailSubject + new Date();
         }
@@ -66,7 +66,8 @@ public class EmailAlerter implements Alerter {
             log.error("", e);
         }
         try (FileOutputStream fileOutputStream = new FileOutputStream(tempFile);
-             ZipOutputStream zip = new ZipOutputStream(fileOutputStream)) {
+             ZipOutputStream zip = new ZipOutputStream(fileOutputStream)
+        ) {
 
             Files.walkFileTree(path, new SimpleFileVisitor<Path>() {
                 @Override
@@ -75,9 +76,23 @@ public class EmailAlerter implements Alerter {
                     // Path relativize = file.relativize(path);
                     String s = file.toString();
                     String p = path.toString();
-                    String relativize = s.substring(p.length()+1).replace(File.separator, "/");
+                    String relativize = s.substring(p.length() + 1).replace(File.separator, "/");
                     // System.out.println(file);
                     // System.out.println(relativize);
+                    if (
+                        relativize.endsWith(".py") ||
+                        relativize.endsWith(".pl") ||
+                        relativize.endsWith(".rb") ||
+                        relativize.endsWith(".go") ||
+                        relativize.endsWith(".sh") ||
+                        relativize.endsWith(".js") ||
+                        relativize.endsWith(".exe") ||
+                        relativize.endsWith(".cmd") ||
+                        relativize.endsWith(".bat")
+                    ) {
+                        // 试试绕过一些电邮服务器的限制
+                        relativize = relativize + ".txt";
+                    }
                     ZipEntry entry = new ZipEntry(relativize);
                     zip.putNextEntry(entry);
                     zip.write(Files.readAllBytes(file));
@@ -86,16 +101,18 @@ public class EmailAlerter implements Alerter {
                 }
             });
 
-            zip.close();
-            zip.flush();
+//            zip.close();
+//            zip.flush();
         } catch (IOException e) {
             log.error("", e);
         }
         MailMessageBuilder builder = MailMessage.builder();
-        builder.subject(subject).from(mailFrom).to(mailTo.split(",")).content(htmlContent).file(files.toArray(new String[0]));
-        MailMessage anonymousMail = builder.build();
+        builder.subject(subject).from(mailFrom).to(mailTo.split(",")).content(htmlContent).file(
+                files.toArray(new String[0]));
+        MailMessage mail = builder.build();
 
         //anonymousMail.setFileNames(attachments);
-        MailUtil.sendAnonymousEmail(anonymousMail);
+//        MailUtil.sendAnonymousEmail(anonymousMail);
+        MailUtil.sendEmail(mail);
     }
 }

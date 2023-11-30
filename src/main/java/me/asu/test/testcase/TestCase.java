@@ -44,7 +44,7 @@ public class TestCase implements Comparable<TestCase> {
 	public String toString() {
 		TableGenerator tg = new TableGenerator();
 		List<String> headers = Arrays.asList(
-				TableGenerator.makeAlignCenter("字段"), TableGenerator.makeAlignCenter("值"));
+				TableGenerator.makeAlignCenter("Field"), TableGenerator.makeAlignCenter("Value"));
 		List<List<String>> rows = new ArrayList<List<String>>();
 		rows.add(Arrays.asList("name", safeString(name)));
 		rows.add(Arrays.asList("description", safeString(description)));
