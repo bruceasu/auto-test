@@ -2,18 +2,17 @@ package me.asu.test.config;
 
 import lombok.extern.slf4j.Slf4j;
 import me.asu.test.util.LangUtil;
+import me.asu.test.util.PlaceholderUtils;
 import me.asu.test.util.StringUtils;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.Reader;
+import java.io.*;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.regex.Pattern;
 
 
 /**
@@ -24,11 +23,11 @@ import java.util.*;
  * @since 2017-09-19 16:17
  */
 @Slf4j
-public class ApplicationConfig extends Properties {
+public class ApplicationConfig extends LinkedHashMap<String, String> {
 
-    // 是否为UTF8格式的Properties文件
+    //  whether utf-8 charset file
     private final boolean utf8;
-    // 是否忽略无法加载的文件
+    // ignore not found
     private boolean ignoreResourceNotFound = true;
 
     public ApplicationConfig() {
@@ -42,6 +41,16 @@ public class ApplicationConfig extends Properties {
 
     public ApplicationConfig(boolean utf8) {
         this.utf8 = utf8;
+        Map<String, String> getenv = System.getenv();
+        for (Map.Entry<String, String> e : getenv.entrySet()) {
+            put("env." + e.getKey(), e.getValue());
+        }
+        Properties properties = System.getProperties();
+        Enumeration<String> enumeration = (Enumeration<String>) properties.propertyNames();
+        while (enumeration.hasMoreElements()) {
+            String key = enumeration.nextElement();
+            put(key, properties.getProperty(key));
+        }
     }
 
     public ApplicationConfig(String... paths) {
@@ -60,7 +69,7 @@ public class ApplicationConfig extends Properties {
     }
 
     /**
-     * @param r 文本输入流
+     * @param r text
      * @since 1.b.50
      */
     public ApplicationConfig(Reader r) {
@@ -69,12 +78,12 @@ public class ApplicationConfig extends Properties {
     }
 
     /**
-     * 加载指定文件/文件夹的Properties文件,合并成一个Properties对象
+     * load file/directories Properties
      * <p>
-     * <b style=color:red>如果有重复的key,请务必注意加载的顺序!!<b/>
+     * <b style=color:red>The last key will overwrite the earlier one.<b/>
      * </P>
      *
-     * @param paths 需要加载的Properties文件路径
+     * @param paths The files or directories
      */
     public void setPaths(String... paths) {
         clear();
@@ -84,10 +93,8 @@ public class ApplicationConfig extends Properties {
             for (String path : paths) {
                 Path p = Paths.get(path);
                 if (Files.isRegularFile(p)) {
-                    try (Reader r = Files.newBufferedReader(p, cs)) {
-                        Properties prop = new Properties();
-                        prop.load(r);
-                        putAll(prop);
+                    try (BufferedReader r = Files.newBufferedReader(p, cs)) {
+                        joinAndClose(r);
                     }
                 } else {
                     // try classpath
@@ -98,9 +105,8 @@ public class ApplicationConfig extends Properties {
                                  this.getClass().getClassLoader().getResourceAsStream(path)
                     ) {
                         if (is != null) {
-                            Properties prop = new Properties();
-                            prop.load(new InputStreamReader(is, cs));
-                            putAll(prop);
+                            BufferedReader r = new BufferedReader(new InputStreamReader(is, cs));
+                            joinAndClose(r);
                         }
                     }
                 }
@@ -114,14 +120,6 @@ public class ApplicationConfig extends Properties {
         this.ignoreResourceNotFound = ignoreResourceNotFound;
     }
 
-    /**
-     * @param key 键
-     * @return 是否包括这个键
-     * @since 1.b.50
-     */
-    public boolean has(String key) {
-        return containsKey(key);
-    }
 
     public ApplicationConfig set(String key, String val) {
         put(key, val);
@@ -149,7 +147,9 @@ public class ApplicationConfig extends Properties {
     }
 
     public String get(String key, String defaultValue) {
-        return getProperty(key, defaultValue);
+        String v = get(key);
+        return Optional.ofNullable(v).orElse(defaultValue);
+
     }
 
     public List<String> getList(String key) {
@@ -209,49 +209,40 @@ public class ApplicationConfig extends Properties {
         return StringUtils.trim(get(key, defaultValue));
     }
 
-    public List<String> getKeys() {
-        List<String> list = new ArrayList<>();
-        final Enumeration<Object> keys = keys();
-        while (keys.hasMoreElements()) {
-            final Object o = keys.nextElement();
-            if (o == null) continue;
-            if (o instanceof String) {
-                list.add((String) o);
-            } else {
-                list.add(o.toString());
-            }
-        }
-        return list;
-    }
-
-    public Collection<String> getValues() {
-        final Collection<Object> vs = values();
-        if (vs == null || vs.isEmpty()) return Collections.emptyList();
-        List<String> values = new ArrayList<>();
-        for (Object v : vs) {
-            if (v == null) continue;
-            if (v instanceof String) {
-                values.add((String) v);
-            } else {
-                values.add(v.toString());
-            }
-        }
-        return values;
-    }
-
-
     /**
-     * 将另外一个 Properties 文本加入本散列表.
+     * add a Properties.
      *
-     * @param r 文本输入流
-     * @return 自身
+     * @param r content of properties format
+     * @return self
      */
     public ApplicationConfig joinAndClose(Reader r) {
-        Properties mp = new Properties();
+
+        BufferedReader br;
         try {
-            mp.load(r);
-        } catch (IOException e) {
-            LangUtil.rethrowUnchecked(e);
+            if (r instanceof BufferedReader) {
+                br = (BufferedReader) r;
+            }
+            else {
+                br = new BufferedReader(r);
+            }
+            br.lines().forEach(line -> {
+                if (StringUtils.isEmpty(line)
+                    || line.startsWith("#")
+                    || line.startsWith("＃")) {
+                    return;
+                }
+
+                final String[] split = line.split("=", 2);
+                String k, v;
+                if (split.length == 2) {
+                    k = split[0];
+                    v = split[1];
+                } else {
+                    k = split[0];
+                    v = null;
+                }
+                put(k, v);
+            });
         } finally {
             if (r != null) {
                 try {
@@ -261,13 +252,23 @@ public class ApplicationConfig extends Properties {
                 }
             }
         }
-        this.putAll(mp);
         return this;
     }
 
+    final Pattern pattern = Pattern.compile("\\$\\{.+?\\}");
+    @Override
+    public String put(String key, String value) {
+        if (StringUtils.isNotEmpty(key) && pattern.matcher(key).find()) {
+            value = PlaceholderUtils.resolvePlaceholders(key, this);
+        }
+        return super.put(key, value);
+    }
 
-    public String get(String key) {
-        return super.getProperty(key);
+    @Override
+    public void putAll(Map<? extends String, ? extends String> m) {
+        m.forEach((k,v)->{
+            put(k, v);
+        });
     }
 
 

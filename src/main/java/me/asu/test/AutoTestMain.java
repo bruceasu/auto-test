@@ -40,7 +40,7 @@ public class AutoTestMain {
 		try {
 			options = parseCommandLine(args);
 			TableGenerator tg = new TableGenerator();
-			List<String> th = Arrays.asList(" 参数 ", " 值 ");
+			List<String> th = Arrays.asList(" Arg ", " Value ");
 			List<List<String>> rows = new ArrayList<>();
 			for (Entry<String, String> e : options.entrySet()) {
 				rows.add(Arrays.asList(e.getKey(), e.getValue()));

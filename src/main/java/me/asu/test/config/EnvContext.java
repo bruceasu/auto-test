@@ -41,7 +41,7 @@ public class EnvContext implements Map<String, Object> {
 		if (cfg == null) {
 			return;
 		}
-		List<String> strings = cfg.getKeys();
+		Set<String> strings = cfg.keySet();
 		for (String key : strings) {
 			String s = cfg.get(key);
 			s = PlaceholderUtils.resolvePlaceholders(s, cache);
@@ -52,7 +52,7 @@ public class EnvContext implements Map<String, Object> {
 	}
 
 	public boolean hasCfg(String key) {
-		return appCfg.has(key);
+		return appCfg.containsKey(key);
 	}
 
 	public boolean getCfgBoolean(String key) {

@@ -26,7 +26,7 @@ public class PlaceholderUtils {
 	public static final String PLACEHOLDER_SUFFIX = "}";
 
 	public static String resolvePlaceholders(String text, Map parameter) {
-		if (parameter == null || parameter.isEmpty()) {
+		if (StringUtils.isEmpty(text) || parameter == null || parameter.isEmpty()) {
 			return text;
 		}
 		StringBuffer buf = new StringBuffer(text);
